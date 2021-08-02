@@ -6,11 +6,9 @@ import Head
 import Head.Seo as Seo
 import Html
 import Html.Attributes
-import Page exposing (Page, PageWithState, StaticPayload)
+import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
-import Serialize as Codec
-import Set
 import Shared exposing (viewTag)
 import Theme
 import View exposing (Body(..), View)
@@ -75,6 +73,8 @@ view maybeUrl sharedModel static =
     { title = "Tag list"
     , body =
         static.data
+            |> List.sortBy Tuple.first
+            |> List.sortBy (Tuple.second >> negate)
             |> List.map
                 (\( tag, count ) ->
                     Html.div []
