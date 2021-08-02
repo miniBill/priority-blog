@@ -67,7 +67,8 @@ listWithMetadata =
                     |> DataSource.combine
                     |> DataSource.map (List.sortBy (.metadata >> .priority))
             )
-        |> (if Debug.log "FIXME" False then
+        |> (-- FIXME
+            if False then
                 DataSource.distillSerializeCodec "articles" (Codec.list codec)
 
             else
@@ -85,7 +86,8 @@ tags =
                     |> List.gatherEquals
                     |> List.map (\( tag, copies ) -> ( tag, 1 + List.length copies ))
             )
-        |> (if Debug.log "FIXME" False then
+        |> (-- FIXME
+            if False then
                 DataSource.distillSerializeCodec "tags" (Codec.list <| Codec.tuple Codec.string Codec.int)
 
             else
