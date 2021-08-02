@@ -10,7 +10,7 @@ layout : String -> Html msg -> Html msg
 layout title body =
     row [ padding ]
         [ sidebar
-        , div [ style "margin-left" rythm, style "padding-top" rythm ]
+        , div [ style "margin-left" rythm ]
             [ h1 [] [ text title ]
             , body
             ]
