@@ -1,14 +1,18 @@
-module Page.Index exposing (Data, Model, Msg, page)
+module Page.Blog.Tags exposing (Data, Model, Msg, page)
 
+import Data.Article as Article
 import DataSource exposing (DataSource)
-import DataSource.File
 import Head
 import Head.Seo as Seo
 import Html
-import Page exposing (Page, StaticPayload)
+import Html.Attributes
+import Page exposing (Page, PageWithState, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
-import Shared
+import Serialize as Codec
+import Set
+import Shared exposing (viewTag)
+import Theme
 import View exposing (Body(..), View)
 
 
@@ -34,12 +38,12 @@ page =
 
 
 type alias Data =
-    String
+    List ( String, Int )
 
 
 data : DataSource Data
 data =
-    DataSource.File.rawFile "markdown/index.md"
+    Article.tags
 
 
 head :
@@ -68,6 +72,16 @@ view :
     -> StaticPayload Data RouteParams
     -> View Msg
 view maybeUrl sharedModel static =
-    { title = "Homepage"
-    , body = MarkdownBody static.data
+    { title = "Tag list"
+    , body =
+        static.data
+            |> List.map
+                (\( tag, count ) ->
+                    Html.div []
+                        [ viewTag tag
+                        , Html.text <| " (" ++ String.fromInt count ++ ")"
+                        ]
+                )
+            |> Theme.column [ Html.Attributes.class "spaced" ]
+            |> HtmlBody
     }

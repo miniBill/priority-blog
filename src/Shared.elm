@@ -1,4 +1,4 @@
-module Shared exposing (Data, Model, Msg(..), SharedMsg(..), template)
+module Shared exposing (Data, Model, Msg(..), SharedMsg(..), template, viewTag)
 
 import Browser.Navigation
 import DataSource
@@ -10,7 +10,8 @@ import Pages.PageUrl exposing (PageUrl)
 import Path exposing (Path)
 import Route exposing (Route)
 import SharedTemplate exposing (SharedTemplate)
-import View exposing (View)
+import Theme
+import View exposing (ArticleData, Body(..), View)
 
 
 template : SharedTemplate Msg Model Data msg
@@ -97,27 +98,44 @@ view :
     -> View msg
     -> { body : Html msg, title : String }
 view sharedData page model toMsg pageView =
-    { body =
-        case pageView.body of
-            Err markdown ->
-                case markdownToView markdown of
-                    Ok tags ->
-                        Html.div [] tags
-
-                    Err e ->
-                        Html.text e
-
-            Ok tags ->
-                Html.div [] tags
+    { body = Theme.layout pageView.title <| viewToHtml pageView
     , title = pageView.title
     }
 
 
-markdownToView :
-    String
-    -> Result String (List (Html msg))
-markdownToView markdownString =
-    markdownString
+viewToHtml : View msg -> Html msg
+viewToHtml pageView =
+    case pageView.body of
+        ArticleBody article ->
+            case markdownToHtml article.markdown of
+                Ok content ->
+                    Html.div []
+                        (content
+                            ++ [ Html.div [] <|
+                                    Html.text "Tags: "
+                                        :: List.intersperse (Html.text ", ")
+                                            (List.map viewTag article.metadata.tags)
+                               ]
+                        )
+
+                Err e ->
+                    Html.text e
+
+        MarkdownBody markdown ->
+            case markdownToHtml markdown of
+                Ok content ->
+                    Html.div [] content
+
+                Err e ->
+                    Html.text e
+
+        HtmlBody tag ->
+            tag
+
+
+markdownToHtml : String -> Result String (List (Html msg))
+markdownToHtml markdown =
+    markdown
         |> Markdown.Parser.parse
         |> Result.mapError (\_ -> "Markdown error.")
         |> Result.andThen
@@ -126,3 +144,13 @@ markdownToView markdownString =
                     Markdown.Renderer.defaultHtmlRenderer
                     blocks
             )
+        |> Result.map
+            (\body ->
+                body
+            )
+
+
+viewTag : String -> Html msg
+viewTag tag =
+    Route.Blog__Tags__Slug_ { slug = tag }
+        |> Route.toLink (\attrs -> Html.a attrs [ Html.text tag ])

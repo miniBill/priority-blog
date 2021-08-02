@@ -1,10 +1,11 @@
-module Page.Index exposing (Data, Model, Msg, page)
+module Page.Blog.Slug_ exposing (Data, Model, Msg, page)
 
+import Data.Article as Article exposing (ArticleMetadata)
 import DataSource exposing (DataSource)
 import DataSource.File
 import Head
 import Head.Seo as Seo
-import Html
+import OptimizedDecoder as Decode
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
@@ -21,25 +22,39 @@ type alias Msg =
 
 
 type alias RouteParams =
-    {}
+    { slug : String
+    }
+
+
+type alias Data =
+    { markdown : String
+    , metadata : ArticleMetadata
+    }
 
 
 page : Page RouteParams Data
 page =
-    Page.single
+    Page.prerender
         { head = head
         , data = data
+        , routes = Article.list
         }
         |> Page.buildNoState { view = view }
 
 
-type alias Data =
-    String
-
-
-data : DataSource Data
-data =
-    DataSource.File.rawFile "markdown/index.md"
+data : RouteParams -> DataSource Data
+data { slug } =
+    DataSource.File.bodyWithFrontmatter
+        (\markdown ->
+            Decode.map
+                (\metadata ->
+                    { markdown = markdown
+                    , metadata = metadata
+                    }
+                )
+                Article.metadataDecoder
+        )
+        (Article.slugToFilePath slug)
 
 
 head :
@@ -57,7 +72,7 @@ head static =
             }
         , description = "TODO"
         , locale = Nothing
-        , title = "TODO title" -- metadata.title -- TODO
+        , title = static.data.metadata.title
         }
         |> Seo.website
 
@@ -68,6 +83,6 @@ view :
     -> StaticPayload Data RouteParams
     -> View Msg
 view maybeUrl sharedModel static =
-    { title = "Homepage"
-    , body = MarkdownBody static.data
+    { title = static.data.metadata.title ++ " (" ++ String.fromInt static.data.metadata.priority ++ ")"
+    , body = ArticleBody static.data
     }
