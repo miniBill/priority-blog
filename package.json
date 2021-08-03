@@ -5,6 +5,7 @@
     "build": "elm-pages -V && elm-pages build"
   },
   "devDependencies": {
+    "elm-optimize-level-2": "^0.1.5",
     "elm-pages": "^2.1.4"
   }
 }
