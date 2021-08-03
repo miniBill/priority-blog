@@ -2,7 +2,7 @@
   "name": "elm-pages-app",
   "scripts": {
     "start": "elm-pages dev",
-    "build": "elm-pages build"
+    "build": "npx elm-pages build"
   },
   "devDependencies": {
     "elm-pages": "^2.1.3"
