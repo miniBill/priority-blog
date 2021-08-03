@@ -102,4 +102,8 @@ fontColor color =
 
 priorityToColor : Int -> Color
 priorityToColor priority =
-    Color.hsl (toFloat priority / 100 * 2 / 3) 1 0.75
+    let
+        hue =
+            toFloat priority / 100 * 2 / 3
+    in
+    Color.hsl hue 1 0.75
