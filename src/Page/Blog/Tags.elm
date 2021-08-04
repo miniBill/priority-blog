@@ -9,6 +9,7 @@ import Html.Attributes
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
+import Route
 import Shared exposing (viewTag)
 import Theme
 import View exposing (Body(..), View)
@@ -70,7 +71,8 @@ view :
     -> StaticPayload Data RouteParams
     -> View Msg
 view maybeUrl sharedModel static =
-    { title = "Tag list"
+    { breadcrumbs = [ Route.Blog ]
+    , title = "Tag list"
     , body =
         static.data
             |> List.sortBy Tuple.first

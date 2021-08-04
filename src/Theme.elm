@@ -1,20 +1,39 @@
 module Theme exposing (column, layout, priorityBadge, row)
 
 import Color exposing (Color)
+import Data.Route
 import Html exposing (Attribute, Html, a, div, h1, text)
 import Html.Attributes exposing (class, style)
-import Route
+import Route exposing (Route)
+import View exposing (View)
 
 
-layout : String -> Html msg -> Html msg
-layout title body =
+layout : View msg -> Html msg -> Html msg
+layout { title, breadcrumbs } body =
     row [ padding ]
         [ sidebar
         , div [ style "margin-left" rythm ]
-            [ h1 [] [ text title ]
+            [ div [] <|
+                List.intersperse (Html.text " > ") <|
+                    List.filterMap viewBreadcrumb breadcrumbs
+                        ++ [ h1 [ style "display" "inline-block" ] [ text title ] ]
             , body
             ]
         ]
+
+
+viewBreadcrumb : Route -> Maybe (Html msg)
+viewBreadcrumb route =
+    Data.Route.routeToLabel route
+        |> Maybe.map
+            (\label ->
+                Route.toLink
+                    (\attrs ->
+                        a attrs
+                            [ text label ]
+                    )
+                    route
+            )
 
 
 sidebar : Html msg
@@ -29,13 +48,19 @@ sidebar =
                 )
                 [ text name ]
     in
-    [ ( "Homepage", Route.Index )
-    , ( "Blog index", Route.Blog )
-    , ( "All tags", Route.Blog__Tags )
+    [ Route.Index
+    , Route.Blog
+    , Route.Blog__Tags
     ]
-        |> List.map
-            (\( name, route ) ->
-                Route.toLink (toSidebarLink name) route
+        |> List.filterMap
+            (\route ->
+                Data.Route.routeToLabel route
+                    |> Maybe.map
+                        (\label ->
+                            Route.toLink
+                                (toSidebarLink label)
+                                route
+                        )
             )
         |> column [ class "spaced" ]
 

@@ -9,6 +9,7 @@ import Page exposing (Page, StaticPayload)
 import Page.Blog
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
+import Route
 import Serialize as Codec exposing (Codec)
 import Shared
 import View exposing (Body(..), View)
@@ -98,6 +99,7 @@ view :
     -> StaticPayload Data RouteParams
     -> View Msg
 view maybeUrl sharedModel static =
-    { title = "Tag: " ++ static.data.tag
+    { breadcrumbs = [ Route.Blog__Tags ]
+    , title = "Tag: " ++ static.data.tag
     , body = Page.Blog.viewArticleList static.data.articles
     }

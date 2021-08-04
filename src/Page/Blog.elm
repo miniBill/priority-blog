@@ -46,7 +46,8 @@ view :
     -> StaticPayload Data RouteParams
     -> View Msg
 view maybeUrl sharedModel static =
-    { title = "Blog index"
+    { breadcrumbs = []
+    , title = "Blog index"
     , body = viewArticleList static.data
     }
 
@@ -64,12 +65,23 @@ viewLink article =
     Route.Blog__Slug_ { slug = article.slug }
         |> Route.toLink
             (\attrs ->
+                let
+                    tags =
+                        List.map Shared.viewTag article.metadata.tags
+                            |> List.intersperse (Html.text ", ")
+                            |> Html.div
+                                [ Html.Attributes.style "display" "inline-block"
+                                , Html.Attributes.style "font-size" "0.8rem"
+                                ]
+                in
                 Html.div []
                     [ Theme.priorityBadge article.metadata.priority
                     , Html.text " "
                     , Html.a
                         attrs
                         [ Html.text article.metadata.title ]
+                    , Html.text " - "
+                    , tags
                     ]
             )
 

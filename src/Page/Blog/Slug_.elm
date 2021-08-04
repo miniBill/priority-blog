@@ -9,6 +9,7 @@ import OptimizedDecoder as Decode
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
+import Route
 import Shared
 import View exposing (Body(..), View)
 
@@ -83,6 +84,7 @@ view :
     -> StaticPayload Data RouteParams
     -> View Msg
 view maybeUrl sharedModel static =
-    { title = static.data.metadata.title ++ " (" ++ String.fromInt static.data.metadata.priority ++ ")"
+    { breadcrumbs = [ Route.Blog ]
+    , title = static.data.metadata.title ++ " (" ++ String.fromInt static.data.metadata.priority ++ ")"
     , body = ArticleBody static.data
     }

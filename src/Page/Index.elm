@@ -68,6 +68,7 @@ view :
     -> StaticPayload Data RouteParams
     -> View Msg
 view maybeUrl sharedModel static =
-    { title = "Homepage"
+    { breadcrumbs = []
+    , title = "Homepage"
     , body = MarkdownBody static.data
     }
