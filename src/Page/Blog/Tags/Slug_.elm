@@ -100,6 +100,6 @@ view :
     -> View Msg
 view maybeUrl sharedModel static =
     { breadcrumbs = [ Route.Blog__Tags ]
-    , title = "Tag: " ++ static.data.tag
+    , title = Just <| "Tag: " ++ static.data.tag
     , body = Page.Blog.viewArticleList static.data.articles
     }

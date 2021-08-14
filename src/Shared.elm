@@ -1,7 +1,8 @@
 module Shared exposing (Data, Model, Msg(..), SharedMsg(..), template, viewTag)
 
 import Browser.Navigation
-import DataSource
+import Data.Article
+import DataSource exposing (DataSource)
 import Html exposing (Html)
 import Markdown.Parser
 import Markdown.Renderer
@@ -13,7 +14,7 @@ import SharedTemplate exposing (SharedTemplate)
 import Task
 import Theme
 import Time
-import View exposing (ArticleData, Body(..), View)
+import View exposing (Body(..), View)
 
 
 template : SharedTemplate Msg Model Data msg
@@ -37,7 +38,7 @@ type Msg
 
 
 type alias Data =
-    ()
+    List ( String, Int )
 
 
 type SharedMsg
@@ -84,9 +85,9 @@ subscriptions _ _ =
     Sub.none
 
 
-data : DataSource.DataSource Data
+data : DataSource Data
 data =
-    DataSource.succeed ()
+    Data.Article.tags
 
 
 view :
@@ -100,8 +101,8 @@ view :
     -> View msg
     -> { body : Html msg, title : String }
 view sharedData page model toMsg pageView =
-    { body = Theme.layout pageView <| viewToHtml pageView
-    , title = pageView.title
+    { body = Theme.layout sharedData pageView <| viewToHtml pageView
+    , title = Maybe.withDefault "TODO" pageView.title
     }
 
 

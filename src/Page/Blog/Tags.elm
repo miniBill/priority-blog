@@ -72,7 +72,7 @@ view :
     -> View Msg
 view maybeUrl sharedModel static =
     { breadcrumbs = [ Route.Blog ]
-    , title = "Tag list"
+    , title = Just "Tag list"
     , body =
         static.data
             |> List.sortBy Tuple.first

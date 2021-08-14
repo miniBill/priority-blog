@@ -20,7 +20,7 @@ type alias ArticleData =
 
 type alias View msg =
     { breadcrumbs : List Route
-    , title : String
+    , title : Maybe String
     , body : Body msg
     }
 
@@ -45,6 +45,6 @@ map fn doc =
 placeholder : String -> View msg
 placeholder moduleName =
     { breadcrumbs = []
-    , title = "Placeholder - " ++ moduleName
+    , title = Nothing
     , body = HtmlBody <| Html.text moduleName
     }

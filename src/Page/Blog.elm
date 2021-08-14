@@ -1,6 +1,7 @@
 module Page.Blog exposing (Data, Model, Msg, page, viewArticleList)
 
 import Data.Article exposing (Article)
+import Data.Route
 import DataSource exposing (DataSource)
 import Head
 import Head.Seo as Seo
@@ -47,7 +48,7 @@ view :
     -> View Msg
 view maybeUrl sharedModel static =
     { breadcrumbs = []
-    , title = "Blog index"
+    , title = Data.Route.routeToLabel Route.Blog
     , body = viewArticleList static.data
     }
 

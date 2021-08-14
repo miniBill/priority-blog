@@ -8,15 +8,24 @@ import Route exposing (Route)
 import View exposing (View)
 
 
-layout : View msg -> Html msg -> Html msg
-layout { title, breadcrumbs } body =
+layout : List ( String, Int ) -> View msg -> Html msg -> Html msg
+layout tags { title, breadcrumbs } body =
     row [ padding ]
-        [ sidebar
-        , div [ style "margin-left" rythm ]
+        [ sidebar tags
+        , div
+            [ style "margin-left" rythm
+            , style "width" "100%"
+            ]
             [ div [] <|
                 List.intersperse (Html.text " > ") <|
                     List.filterMap viewBreadcrumb breadcrumbs
-                        ++ [ h1 [ style "display" "inline-block" ] [ text title ] ]
+                        ++ (case title of
+                                Just t ->
+                                    [ h1 [ style "display" "inline-block" ] [ text t ] ]
+
+                                Nothing ->
+                                    []
+                           )
             , body
             ]
         ]
@@ -36,8 +45,8 @@ viewBreadcrumb route =
             )
 
 
-sidebar : Html msg
-sidebar =
+sidebar : List ( String, Int ) -> Html msg
+sidebar tags =
     let
         toSidebarLink name attrs =
             a
@@ -48,10 +57,18 @@ sidebar =
                 )
                 [ text name ]
     in
-    [ Route.Index
-    , Route.Blog
-    , Route.Blog__Tags
-    ]
+    ([ Route.Index
+     , Route.Blog
+     , Route.Blog__Tags
+     ]
+        ++ (tags
+                |> List.sortBy (Tuple.second >> negate)
+                |> List.map
+                    (\( tag, _ ) ->
+                        Route.Blog__Tags__Slug_ { slug = tag }
+                    )
+           )
+    )
         |> List.filterMap
             (\route ->
                 Data.Route.routeToLabel route

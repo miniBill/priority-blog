@@ -85,6 +85,6 @@ view :
     -> View Msg
 view maybeUrl sharedModel static =
     { breadcrumbs = [ Route.Blog ]
-    , title = static.data.metadata.title ++ " (" ++ String.fromInt static.data.metadata.priority ++ ")"
+    , title = Just <| static.data.metadata.title ++ " (" ++ String.fromInt static.data.metadata.priority ++ ")"
     , body = ArticleBody static.data
     }

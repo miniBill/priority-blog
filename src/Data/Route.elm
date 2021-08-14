@@ -12,11 +12,11 @@ routeToLabel route =
         Blog__Tags ->
             Just "All tags"
 
-        Blog__Tags__Slug_ _ ->
-            Nothing
+        Blog__Tags__Slug_ { slug } ->
+            Just <| "Tag: " ++ slug
 
         Blog__Slug_ _ ->
             Nothing
 
         Blog ->
-            Just "Blog index"
+            Just "Blog index (by priority)"
