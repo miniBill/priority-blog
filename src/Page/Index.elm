@@ -1,14 +1,17 @@
 module Page.Index exposing (Data, Model, Msg, page)
 
+import Data.Article exposing (Article)
 import DataSource exposing (DataSource)
-import DataSource.File
+import DateFormat
 import Head
 import Head.Seo as Seo
-import Html
+import Html exposing (a, b, h2, li, text, ul)
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
+import Route
 import Shared
+import Time exposing (Posix)
 import View exposing (Body(..), View)
 
 
@@ -34,18 +37,19 @@ page =
 
 
 type alias Data =
-    String
+    List ( Posix, Article )
 
 
 data : DataSource Data
 data =
-    DataSource.File.rawFile "markdown/index.md"
+    Data.Article.listWithMetadata
+        |> DataSource.map (List.filterMap (\({ metadata } as article) -> Maybe.map (\datePublished -> ( datePublished, article )) metadata.datePublished))
 
 
 head :
     StaticPayload Data RouteParams
     -> List Head.Tag
-head static =
+head _ =
     Seo.summary
         { canonicalUrlOverride = Nothing
         , siteName = "elm-pages"
@@ -57,7 +61,7 @@ head static =
             }
         , description = "TODO"
         , locale = Nothing
-        , title = "TODO title" -- metadata.title -- TODO
+        , title = "TODO"
         }
         |> Seo.website
 
@@ -67,8 +71,37 @@ view :
     -> Shared.Model
     -> StaticPayload Data RouteParams
     -> View Msg
-view maybeUrl sharedModel static =
+view _ sharedModel static =
     { breadcrumbs = []
     , title = "Homepage"
-    , body = MarkdownBody static.data
+    , body =
+        static.data
+            |> List.sortBy (Tuple.first >> Time.posixToMillis >> negate)
+            |> List.map
+                (\( datePublished, { slug, metadata } ) ->
+                    Route.toLink
+                        (\attrs ->
+                            a attrs
+                                [ li []
+                                    [ h2 [] [ text metadata.title ]
+                                    , text "Published: "
+                                    , b []
+                                        [ text <|
+                                            DateFormat.format
+                                                [ DateFormat.monthNameAbbreviated
+                                                , DateFormat.text " "
+                                                , DateFormat.dayOfMonthSuffix
+                                                , DateFormat.text ", "
+                                                , DateFormat.yearNumber
+                                                ]
+                                                (Maybe.withDefault Time.utc sharedModel.here)
+                                                datePublished
+                                        ]
+                                    ]
+                                ]
+                        )
+                        (Route.Blog__Slug_ { slug = slug })
+                )
+            |> ul []
+            |> HtmlBody
     }

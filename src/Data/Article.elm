@@ -3,9 +3,11 @@ module Data.Article exposing (Article, ArticleMetadata, codec, list, listWithMet
 import DataSource exposing (DataSource)
 import DataSource.File
 import DataSource.Glob as Glob
+import Iso8601
 import List.Extra as List
 import OptimizedDecoder as Decode exposing (Decoder)
 import Serialize as Codec exposing (Codec)
+import Time exposing (Posix)
 
 
 type alias Article =
@@ -18,6 +20,8 @@ type alias ArticleMetadata =
     { title : String
     , tags : List String
     , priority : Int
+    , datePublished : Maybe Posix
+    , dateUpdated : Maybe Posix
     }
 
 
@@ -35,7 +39,14 @@ metadataCodec =
         |> Codec.field .title Codec.string
         |> Codec.field .tags (Codec.list Codec.string)
         |> Codec.field .priority Codec.int
+        |> Codec.field .datePublished dateCodec
+        |> Codec.field .dateUpdated dateCodec
         |> Codec.finishRecord
+
+
+dateCodec : Codec () (Maybe Posix)
+dateCodec =
+    Codec.maybe (Codec.map Time.millisToPosix Time.posixToMillis Codec.int)
 
 
 list : DataSource (List { slug : String })
@@ -65,7 +76,6 @@ listWithMetadata =
                                     )
                         )
                     |> DataSource.combine
-                    |> DataSource.map (List.sortBy (.metadata >> .priority))
             )
         |> (-- FIXME
             if False then
@@ -106,6 +116,22 @@ metadataDecoder =
         |> Decode.andMap (Decode.field "title" Decode.string)
         |> Decode.andMap (Decode.field "tags" tagsDecoder)
         |> Decode.andMap (Decode.field "priority" Decode.int)
+        |> Decode.andMap (Decode.maybe <| Decode.field "date-published" dateDecoder)
+        |> Decode.andMap (Decode.maybe <| Decode.field "date-updated" dateDecoder)
+
+
+dateDecoder : Decoder Posix
+dateDecoder =
+    Decode.string
+        |> Decode.andThen
+            (\raw ->
+                case Iso8601.toTime raw of
+                    Ok posix ->
+                        Decode.succeed posix
+
+                    Err _ ->
+                        Decode.fail "Invalid time"
+            )
 
 
 tagsDecoder : Decoder (List String)

@@ -10,7 +10,9 @@ import Pages.PageUrl exposing (PageUrl)
 import Path exposing (Path)
 import Route exposing (Route)
 import SharedTemplate exposing (SharedTemplate)
+import Task
 import Theme
+import Time
 import View exposing (ArticleData, Body(..), View)
 
 
@@ -39,11 +41,11 @@ type alias Data =
 
 
 type SharedMsg
-    = NoOp
+    = Here Time.Zone
 
 
 type alias Model =
-    { showMobileMenu : Bool
+    { here : Maybe Time.Zone
     }
 
 
@@ -62,8 +64,8 @@ init :
             }
     -> ( Model, Cmd Msg )
 init navigationKey flags maybePagePath =
-    ( { showMobileMenu = False }
-    , Cmd.none
+    ( { here = Nothing }
+    , Task.perform (SharedMsg << Here) Time.here
     )
 
 
@@ -71,10 +73,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         OnPageChange _ ->
-            ( { model | showMobileMenu = False }, Cmd.none )
-
-        SharedMsg globalMsg ->
             ( model, Cmd.none )
+
+        SharedMsg (Here here) ->
+            ( { model | here = Just here }, Cmd.none )
 
 
 subscriptions : Path -> Model -> Sub Msg
