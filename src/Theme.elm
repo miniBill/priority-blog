@@ -47,6 +47,79 @@ viewBreadcrumb route =
 
 sidebar : List ( String, Int ) -> Html msg
 sidebar tags =
+    column [ class "spaced" ]
+        [ routeButton Route.Index
+        , routeButton Route.Blog
+        , routeButton Route.Blog__Tags
+        , tagCloud tags
+        ]
+
+
+tagCloud : List ( String, Int ) -> Html msg
+tagCloud tags =
+    let
+        ( minCount, maxCount ) =
+            case tags of
+                [] ->
+                    ( 0, 0 )
+
+                ( _, i ) :: t ->
+                    List.foldl (\( _, e ) ( mn, mx ) -> ( min mn e, max mx e )) ( i, i ) t
+
+        minSize =
+            14
+
+        minWeight =
+            400
+
+        maxSize =
+            18
+
+        maxWeight =
+            900
+
+        scale mnf mxf mnt mxt value =
+            if mnf == mxf then
+                (mnt + mxt) // 2
+
+            else
+                (value - mnf) * (mxt - mnt) // (mxf - mnf) + mnt
+
+        tagSizeAndWeight count =
+            ( scale minCount maxCount minSize maxSize count
+            , scale minCount maxCount minWeight maxWeight count
+            )
+
+        toLink ( slug, count ) =
+            let
+                route =
+                    Route.Blog__Tags__Slug_ { slug = slug }
+            in
+            Route.toLink
+                (\attrs ->
+                    let
+                        ( size, weight ) =
+                            tagSizeAndWeight count
+                    in
+                    a attrs
+                        [ Html.span
+                            [ style "font-size" <| String.fromInt size ++ "px"
+                            , style "font-weight" <| String.fromInt weight
+                            ]
+                            [ Html.text slug ]
+                        ]
+                )
+                route
+    in
+    tags
+        |> List.sortBy (Tuple.second >> negate)
+        |> List.map toLink
+        |> List.intersperse (Html.text " ")
+        |> Html.div []
+
+
+routeButton : Route -> Html msg
+routeButton route =
     let
         toSidebarLink name attrs =
             a
@@ -57,29 +130,14 @@ sidebar tags =
                 )
                 [ text name ]
     in
-    ([ Route.Index
-     , Route.Blog
-     , Route.Blog__Tags
-     ]
-        ++ (tags
-                |> List.sortBy (Tuple.second >> negate)
-                |> List.map
-                    (\( tag, _ ) ->
-                        Route.Blog__Tags__Slug_ { slug = tag }
-                    )
-           )
-    )
-        |> List.filterMap
-            (\route ->
-                Data.Route.routeToLabel route
-                    |> Maybe.map
-                        (\label ->
-                            Route.toLink
-                                (toSidebarLink label)
-                                route
-                        )
+    Data.Route.routeToLabel route
+        |> Maybe.map
+            (\label ->
+                Route.toLink
+                    (toSidebarLink label)
+                    route
             )
-        |> column [ class "spaced" ]
+        |> Maybe.withDefault (Html.text "")
 
 
 padding : Attribute msg
