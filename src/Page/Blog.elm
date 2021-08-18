@@ -47,8 +47,7 @@ view :
     -> StaticPayload Data RouteParams
     -> View Msg
 view _ _ static =
-    { breadcrumbs = []
-    , title = Data.Route.routeToLabel Route.Blog
+    { title = Data.Route.routeToLabel Route.Blog
     , body = viewArticleList static.data
     }
 

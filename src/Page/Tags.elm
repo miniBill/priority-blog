@@ -1,6 +1,7 @@
-module Page.Blog.Tags exposing (Data, Model, Msg, page)
+module Page.Tags exposing (Data, Model, Msg, page)
 
 import Data.Article as Article
+import Data.Route as Route
 import DataSource exposing (DataSource)
 import Head
 import Head.Seo as Seo
@@ -9,7 +10,7 @@ import Html.Attributes
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
-import Route
+import Route exposing (Route(..))
 import Shared exposing (viewTag)
 import Theme
 import View exposing (Body(..), View)
@@ -71,8 +72,7 @@ view :
     -> StaticPayload Data RouteParams
     -> View Msg
 view _ _ static =
-    { breadcrumbs = [ Route.Blog ]
-    , title = Just "Tag list"
+    { title = Route.routeToLabel Tags
     , body =
         static.data
             |> List.sortBy Tuple.first

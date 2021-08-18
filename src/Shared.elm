@@ -155,5 +155,5 @@ markdownToHtml markdown =
 
 viewTag : String -> Html msg
 viewTag tag =
-    Route.Blog__Tags__Slug_ { slug = tag }
+    Route.Tags__Slug_ { slug = tag }
         |> Route.toLink (\attrs -> Html.a attrs [ Html.text tag ])

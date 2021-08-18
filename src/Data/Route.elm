@@ -9,14 +9,14 @@ routeToLabel route =
         Index ->
             Just "Homepage"
 
-        Blog__Tags ->
-            Just "All tags"
-
-        Blog__Tags__Slug_ { slug } ->
-            Just <| "Tag: " ++ slug
+        Blog ->
+            Just "Blog index (by priority)"
 
         Blog__Slug_ _ ->
             Nothing
 
-        Blog ->
-            Just "Blog index (by priority)"
+        Tags ->
+            Just "All tags"
+
+        Tags__Slug_ { slug } ->
+            Just <| "Tag: " ++ slug

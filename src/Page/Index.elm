@@ -81,8 +81,7 @@ view :
     -> StaticPayload Data RouteParams
     -> View Msg
 view _ sharedModel static =
-    { breadcrumbs = []
-    , title = Nothing
+    { title = Nothing
     , body =
         static.data
             |> List.sortBy (Tuple.first >> Time.posixToMillis >> negate)

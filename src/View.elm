@@ -2,7 +2,6 @@ module View exposing (ArticleData, Body(..), View, map, placeholder)
 
 import Data.Article exposing (ArticleMetadata)
 import Html exposing (Html)
-import Route exposing (Route)
 import Time exposing (Month(..))
 
 
@@ -19,16 +18,14 @@ type alias ArticleData =
 
 
 type alias View msg =
-    { breadcrumbs : List Route
-    , title : Maybe String
+    { title : Maybe String
     , body : Body msg
     }
 
 
 map : (msg1 -> msg2) -> View msg1 -> View msg2
 map fn doc =
-    { breadcrumbs = doc.breadcrumbs
-    , title = doc.title
+    { title = doc.title
     , body =
         case doc.body of
             HtmlBody body ->
@@ -44,7 +41,6 @@ map fn doc =
 
 placeholder : String -> View msg
 placeholder moduleName =
-    { breadcrumbs = []
-    , title = Nothing
+    { title = Nothing
     , body = HtmlBody <| Html.text moduleName
     }

@@ -9,40 +9,22 @@ import View exposing (View)
 
 
 layout : List ( String, Int ) -> View msg -> Html msg -> Html msg
-layout tags { title, breadcrumbs } body =
+layout tags { title } body =
     row [ padding ]
         [ sidebar tags
         , div
             [ style "margin-left" rythm
             , style "width" "100%"
             ]
-            [ div [] <|
-                List.intersperse (Html.text " > ") <|
-                    List.filterMap viewBreadcrumb breadcrumbs
-                        ++ (case title of
-                                Just t ->
-                                    [ h1 [ style "display" "inline-block" ] [ text t ] ]
+            [ case title of
+                Just t ->
+                    div [] [ h1 [ style "display" "inline-block" ] [ text t ] ]
 
-                                Nothing ->
-                                    []
-                           )
+                Nothing ->
+                    div [] []
             , body
             ]
         ]
-
-
-viewBreadcrumb : Route -> Maybe (Html msg)
-viewBreadcrumb route =
-    Data.Route.routeToLabel route
-        |> Maybe.map
-            (\label ->
-                Route.toLink
-                    (\attrs ->
-                        a attrs
-                            [ text label ]
-                    )
-                    route
-            )
 
 
 sidebar : List ( String, Int ) -> Html msg
@@ -50,7 +32,7 @@ sidebar tags =
     column [ class "spaced" ]
         [ routeButton Route.Index
         , routeButton Route.Blog
-        , routeButton Route.Blog__Tags
+        , routeButton Route.Tags
         , tagCloud tags
         ]
 
@@ -93,7 +75,7 @@ tagCloud tags =
         toLink ( slug, count ) =
             let
                 route =
-                    Route.Blog__Tags__Slug_ { slug = slug }
+                    Route.Tags__Slug_ { slug = slug }
             in
             Route.toLink
                 (\attrs ->

@@ -1,4 +1,4 @@
-module Page.Blog.Tags.Slug_ exposing (Data, Model, Msg, page)
+module Page.Tags.Slug_ exposing (Data, Model, Msg, page)
 
 import Data.Article as Article exposing (Article)
 import DataSource exposing (DataSource)
@@ -9,7 +9,6 @@ import Page exposing (Page, StaticPayload)
 import Page.Blog
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
-import Route
 import Serialize as Codec exposing (Codec)
 import Shared
 import View exposing (Body(..), View)
@@ -99,7 +98,6 @@ view :
     -> StaticPayload Data RouteParams
     -> View Msg
 view _ _ static =
-    { breadcrumbs = [ Route.Blog__Tags ]
-    , title = Just <| "Tag: " ++ static.data.tag
+    { title = Just <| "Tag: " ++ static.data.tag
     , body = Page.Blog.viewArticleList static.data.articles
     }
