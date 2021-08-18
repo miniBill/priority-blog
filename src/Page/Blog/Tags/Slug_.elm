@@ -98,7 +98,7 @@ view :
     -> Shared.Model
     -> StaticPayload Data RouteParams
     -> View Msg
-view maybeUrl sharedModel static =
+view _ _ static =
     { breadcrumbs = [ Route.Blog__Tags ]
     , title = Just <| "Tag: " ++ static.data.tag
     , body = Page.Blog.viewArticleList static.data.articles

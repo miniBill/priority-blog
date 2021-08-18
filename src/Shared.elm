@@ -64,7 +64,7 @@ init :
             , pageUrl : Maybe PageUrl
             }
     -> ( Model, Cmd Msg )
-init navigationKey flags maybePagePath =
+init _ _ _ =
     ( { here = Nothing }
     , Task.perform (SharedMsg << Here) Time.here
     )
@@ -100,7 +100,7 @@ view :
     -> (Msg -> msg)
     -> View msg
     -> { body : Html msg, title : String }
-view sharedData page model toMsg pageView =
+view sharedData _ _ _ pageView =
     { body = Theme.layout sharedData pageView <| viewToHtml pageView
     , title = Maybe.withDefault "TODO" pageView.title
     }
