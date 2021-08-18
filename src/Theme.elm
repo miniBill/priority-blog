@@ -18,10 +18,10 @@ layout tags { title } body =
             ]
             [ case title of
                 Just t ->
-                    div [] [ h1 [ style "display" "inline-block" ] [ text t ] ]
+                    h1 [ style "display" "inline-block" ] [ text t ]
 
                 Nothing ->
-                    div [] []
+                    text ""
             , body
             ]
         ]
