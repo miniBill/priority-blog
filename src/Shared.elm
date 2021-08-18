@@ -5,6 +5,8 @@ import Data.Article
 import Data.Route
 import DataSource exposing (DataSource)
 import Html exposing (Html)
+import Html.Parser
+import Html.Parser.Util
 import Markdown.Parser
 import Markdown.Renderer
 import Pages.Flags
@@ -117,19 +119,35 @@ viewToHtml : View msg -> Html msg
 viewToHtml pageView =
     case pageView.body of
         ArticleBody article ->
-            case markdownToHtml article.markdown of
-                Ok content ->
-                    Html.div []
-                        (content
-                            ++ [ Html.div [] <|
-                                    Html.text "Tags: "
-                                        :: List.intersperse (Html.text ", ")
-                                            (List.map viewTag article.metadata.tags)
-                               ]
-                        )
+            if article.isMarkdown then
+                case markdownToHtml article.content of
+                    Ok content ->
+                        Html.div []
+                            (content
+                                ++ [ Html.div [] <|
+                                        Html.text "Tags: "
+                                            :: List.intersperse (Html.text ", ")
+                                                (List.map viewTag article.metadata.tags)
+                                   ]
+                            )
 
-                Err e ->
-                    Html.text e
+                    Err e ->
+                        Html.text e
+
+            else
+                case Html.Parser.run article.content of
+                    Ok content ->
+                        Html.div []
+                            (Html.Parser.Util.toVirtualDom content
+                                ++ [ Html.div [] <|
+                                        Html.text "Tags: "
+                                            :: List.intersperse (Html.text ", ")
+                                                (List.map viewTag article.metadata.tags)
+                                   ]
+                            )
+
+                    Err e ->
+                        Html.text "Error parsing HTML"
 
         MarkdownBody markdown ->
             case markdownToHtml markdown of

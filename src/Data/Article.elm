@@ -49,13 +49,26 @@ dateCodec =
     Codec.maybe (Codec.map Time.millisToPosix Time.posixToMillis Codec.int)
 
 
-list : DataSource (List { slug : String })
+list : DataSource (List { slug : String, isMarkdown : Bool })
 list =
-    Glob.succeed (\slug -> { slug = slug })
-        |> Glob.match (Glob.literal "markdown/articles/")
-        |> Glob.capture Glob.wildcard
-        |> Glob.match (Glob.literal ".md")
-        |> Glob.toDataSource
+    let
+        markdowns =
+            Glob.succeed (\slug -> { slug = slug, isMarkdown = True })
+                |> Glob.match (Glob.literal "articles/")
+                |> Glob.capture Glob.wildcard
+                |> Glob.match (Glob.literal ".md")
+                |> Glob.toDataSource
+
+        htmls =
+            Glob.succeed (\slug -> { slug = slug, isMarkdown = False })
+                |> Glob.match (Glob.literal "articles/")
+                |> Glob.capture Glob.wildcard
+                |> Glob.match (Glob.literal ".html")
+                |> Glob.toDataSource
+    in
+    DataSource.map2 (++)
+        markdowns
+        htmls
 
 
 listWithMetadata : DataSource (List Article)
@@ -67,7 +80,7 @@ listWithMetadata =
                     |> List.map
                         (\{ slug } ->
                             slugToFilePath slug
-                                |> DataSource.File.onlyFrontmatter metadataDecoder
+                                |> DataSource.andThen (.path >> DataSource.File.onlyFrontmatter metadataDecoder)
                                 |> DataSource.map
                                     (\metadata ->
                                         { slug = slug
@@ -105,9 +118,38 @@ tags =
            )
 
 
-slugToFilePath : String -> String
+slugToFilePath : String -> DataSource { path : String, isMarkdown : Bool }
 slugToFilePath slug =
-    "markdown/articles/" ++ slug ++ ".md"
+    let
+        mdPath =
+            "articles/" ++ slug ++ ".md"
+
+        markdowns =
+            Glob.succeed { path = mdPath, isMarkdown = True }
+                |> Glob.match (Glob.literal mdPath)
+                |> Glob.toDataSource
+
+        htmlPath =
+            "articles/" ++ slug ++ ".html"
+
+        htmls =
+            Glob.succeed { path = htmlPath, isMarkdown = False }
+                |> Glob.match (Glob.literal htmlPath)
+                |> Glob.toDataSource
+    in
+    DataSource.map2
+        (\m h -> List.head <| m ++ h)
+        markdowns
+        htmls
+        |> DataSource.andThen
+            (\h ->
+                case h of
+                    Nothing ->
+                        DataSource.fail "Article not found"
+
+                    Just c ->
+                        DataSource.succeed c
+            )
 
 
 metadataDecoder : Decoder ArticleMetadata

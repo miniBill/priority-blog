@@ -27,7 +27,8 @@ type alias RouteParams =
 
 
 type alias Data =
-    { markdown : String
+    { content : String
+    , isMarkdown : Bool
     , metadata : ArticleMetadata
     }
 
@@ -37,24 +38,32 @@ page =
     Page.prerender
         { head = head
         , data = data
-        , routes = Article.list
+        , routes =
+            Article.list
+                |> DataSource.map
+                    (List.map <| \{ slug } -> { slug = slug })
         }
         |> Page.buildNoState { view = view }
 
 
 data : RouteParams -> DataSource Data
 data { slug } =
-    DataSource.File.bodyWithFrontmatter
-        (\markdown ->
-            Decode.map
-                (\metadata ->
-                    { markdown = markdown
-                    , metadata = metadata
-                    }
-                )
-                Article.metadataDecoder
-        )
-        (Article.slugToFilePath slug)
+    Article.slugToFilePath slug
+        |> DataSource.andThen
+            (\{ path, isMarkdown } ->
+                DataSource.File.bodyWithFrontmatter
+                    (\content ->
+                        Decode.map
+                            (\metadata ->
+                                { content = content
+                                , isMarkdown = isMarkdown
+                                , metadata = metadata
+                                }
+                            )
+                            Article.metadataDecoder
+                    )
+                    path
+            )
 
 
 head :
