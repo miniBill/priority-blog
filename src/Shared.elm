@@ -2,6 +2,7 @@ module Shared exposing (Data, Model, Msg(..), SharedMsg(..), template, viewTag)
 
 import Browser.Navigation
 import Data.Article
+import Data.Route
 import DataSource exposing (DataSource)
 import Html exposing (Html)
 import Markdown.Parser
@@ -100,9 +101,15 @@ view :
     -> (Msg -> msg)
     -> View msg
     -> { body : Html msg, title : String }
-view sharedData _ _ _ pageView =
+view sharedData { route } _ _ pageView =
     { body = Theme.layout sharedData pageView <| viewToHtml pageView
-    , title = Maybe.withDefault "TODO" pageView.title
+    , title =
+        pageView.title
+            |> Maybe.withDefault
+                (route
+                    |> Maybe.andThen Data.Route.routeToLabel
+                    |> Maybe.withDefault "TODO"
+                )
     }
 
 

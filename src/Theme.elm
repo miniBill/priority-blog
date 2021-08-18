@@ -30,9 +30,9 @@ layout tags { title } body =
 sidebar : List ( String, Int ) -> Html msg
 sidebar tags =
     column [ class "spaced" ]
-        [ routeButton Route.Index
-        , routeButton Route.Blog
-        , routeButton Route.Tags
+        [ routeLink Route.Index
+        , routeLink Route.Blog
+        , routeLink Route.Tags
         , tagCloud tags
         ]
 
@@ -96,8 +96,8 @@ tagCloud tags =
         |> div []
 
 
-routeButton : Route -> Html msg
-routeButton route =
+routeLink : Route -> Html msg
+routeLink route =
     let
         toSidebarLink name attrs =
             div [] [ text "∘ ", a attrs [ text name ] ]
