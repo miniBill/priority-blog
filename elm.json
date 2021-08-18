@@ -18,7 +18,6 @@
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
             "elm-community/list-extra": "8.4.0",
-            "miniBill/date-format-languages": "1.2.1",
             "rtfeldman/elm-iso8601-date-strings": "1.1.4",
             "ryannhg/date-format": "2.3.0"
         },
