@@ -2,7 +2,7 @@ module Theme exposing (column, layout, priorityBadge, row)
 
 import Color exposing (Color)
 import Data.Route
-import Html exposing (Attribute, Html, a, div, h1, text)
+import Html exposing (Attribute, Html, a, div, h1, span, text)
 import Html.Attributes exposing (class, style)
 import Route exposing (Route)
 import View exposing (View)
@@ -73,10 +73,6 @@ tagCloud tags =
             )
 
         toLink ( slug, count ) =
-            let
-                route =
-                    Route.Tags__Slug_ { slug = slug }
-            in
             Route.toLink
                 (\attrs ->
                     let
@@ -84,33 +80,27 @@ tagCloud tags =
                             tagSizeAndWeight count
                     in
                     a attrs
-                        [ Html.span
+                        [ span
                             [ style "font-size" <| String.fromInt size ++ "px"
                             , style "font-weight" <| String.fromInt weight
                             ]
-                            [ Html.text slug ]
+                            [ text slug ]
                         ]
                 )
-                route
+                (Route.Tags__Slug_ { slug = slug })
     in
     tags
         |> List.sortBy (Tuple.second >> negate)
         |> List.map toLink
-        |> List.intersperse (Html.text " ")
-        |> Html.div []
+        |> List.intersperse (text " ")
+        |> div []
 
 
 routeButton : Route -> Html msg
 routeButton route =
     let
         toSidebarLink name attrs =
-            a
-                (attrs
-                    ++ [ style "border" "1px solid black"
-                       , padding
-                       ]
-                )
-                [ text name ]
+            div [] [ text "∘ ", a attrs [ text name ] ]
     in
     Data.Route.routeToLabel route
         |> Maybe.map
@@ -119,7 +109,7 @@ routeButton route =
                     (toSidebarLink label)
                     route
             )
-        |> Maybe.withDefault (Html.text "")
+        |> Maybe.withDefault (text "")
 
 
 padding : Attribute msg
@@ -163,7 +153,7 @@ priorityBadge priority =
         , style "padding" "0.1rem"
         , style "display" "inline-block"
         ]
-        [ Html.text <| String.fromInt priority ]
+        [ text <| String.fromInt priority ]
 
 
 fontColor : Color -> Color
