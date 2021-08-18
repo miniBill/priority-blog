@@ -4,14 +4,13 @@ import Data.Article as Article exposing (Article)
 import DataSource exposing (DataSource)
 import Head
 import Head.Seo as Seo
-import List.Extra as List
 import Page exposing (Page, StaticPayload)
 import Page.Blog
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
 import Serialize as Codec exposing (Codec)
 import Shared
-import View exposing (Body(..), View)
+import View exposing (View)
 
 
 type alias Model =

@@ -147,10 +147,6 @@ markdownToHtml markdown =
                     Markdown.Renderer.defaultHtmlRenderer
                     blocks
             )
-        |> Result.map
-            (\body ->
-                body
-            )
 
 
 viewTag : String -> Html msg

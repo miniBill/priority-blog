@@ -2,7 +2,6 @@ module View exposing (ArticleData, Body(..), View, map, placeholder)
 
 import Data.Article exposing (ArticleMetadata)
 import Html exposing (Html)
-import Time exposing (Month(..))
 
 
 type Body msg
