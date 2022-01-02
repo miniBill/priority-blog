@@ -55,6 +55,7 @@ view _ _ static =
 viewArticleList : List Article -> Body Msg
 viewArticleList list =
     list
+        |> List.sortBy (\{ metadata } -> -metadata.priority)
         |> List.map viewLink
         |> Theme.column [ Html.Attributes.class "spaced" ]
         |> HtmlBody
