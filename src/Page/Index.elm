@@ -1,7 +1,8 @@
 module Page.Index exposing (Data, Model, Msg, page)
 
-import Data.Article exposing (Article)
+import Data.Article exposing (Article, ArticleTime(..))
 import DataSource exposing (DataSource)
+import Date
 import DateFormat
 import Head
 import Head.Seo as Seo
@@ -12,7 +13,7 @@ import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
 import Route
 import Shared
-import Time exposing (Posix)
+import Time
 import View exposing (Body(..), View)
 
 
@@ -38,7 +39,7 @@ page =
 
 
 type alias Data =
-    List ( Posix, Article )
+    List ( ArticleTime, Article )
 
 
 data : DataSource Data
@@ -46,8 +47,22 @@ data =
     Data.Article.listWithMetadata
         |> DataSource.map
             (List.filterMap (\({ metadata } as article) -> Maybe.map (\datePublished -> ( datePublished, article )) metadata.datePublished)
+                >> List.sortBy tupleToOrder
                 >> List.take articlesInHomepage
             )
+
+
+tupleToOrder : ( ArticleTime, Article ) -> ( Int, Int )
+tupleToOrder ( datePublished, article ) =
+    ( -- TODO: Make this more sensibe
+      case datePublished of
+        Iso8601 p ->
+            Date.toRataDie <| Date.fromPosix Time.utc p
+
+        Date d ->
+            Date.toRataDie d
+    , article.metadata.priority
+    )
 
 
 articlesInHomepage : Int
@@ -84,7 +99,6 @@ view _ sharedModel static =
     { title = Nothing
     , body =
         static.data
-            |> List.sortBy (Tuple.first >> Time.posixToMillis >> negate)
             |> List.map (viewArticle sharedModel)
             |> List.intersperse separator
             |> ul [ style "width" "100%" ]
@@ -92,7 +106,7 @@ view _ sharedModel static =
     }
 
 
-viewArticle : Shared.Model -> (( Posix, Article ) -> Html Msg)
+viewArticle : Shared.Model -> (( ArticleTime, Article ) -> Html Msg)
 viewArticle sharedModel ( datePublished, { slug, metadata } ) =
     let
         inner attrs =
@@ -107,15 +121,20 @@ viewArticle sharedModel ( datePublished, { slug, metadata } ) =
                     , text "Published: "
                     , b []
                         [ text <|
-                            DateFormat.format
-                                [ DateFormat.monthNameAbbreviated
-                                , DateFormat.text " "
-                                , DateFormat.dayOfMonthSuffix
-                                , DateFormat.text ", "
-                                , DateFormat.yearNumber
-                                ]
-                                (Maybe.withDefault Time.utc sharedModel.here)
-                                datePublished
+                            case datePublished of
+                                Iso8601 iso ->
+                                    DateFormat.format
+                                        [ DateFormat.monthNameAbbreviated
+                                        , DateFormat.text " "
+                                        , DateFormat.dayOfMonthSuffix
+                                        , DateFormat.text ", "
+                                        , DateFormat.yearNumber
+                                        ]
+                                        (Maybe.withDefault Time.utc sharedModel.here)
+                                        iso
+
+                                Date d ->
+                                    Date.format "MMM ddd, y" d
                         ]
                     ]
                 ]

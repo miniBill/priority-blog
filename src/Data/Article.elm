@@ -1,13 +1,14 @@
-module Data.Article exposing (Article, ArticleMetadata, codec, list, listWithMetadata, metadataDecoder, slugToFilePath, tags)
+module Data.Article exposing (Article, ArticleMetadata, ArticleTime(..), codec, list, listWithMetadata, metadataDecoder, slugToFilePath, tags)
 
 import DataSource exposing (DataSource)
 import DataSource.File
 import DataSource.Glob as Glob
+import Date
 import Iso8601
 import List.Extra as List
 import OptimizedDecoder as Decode exposing (Decoder)
 import Serialize as Codec exposing (Codec)
-import Time exposing (Posix)
+import Time
 
 
 type alias Article =
@@ -20,9 +21,14 @@ type alias ArticleMetadata =
     { title : String
     , tags : List String
     , priority : Int
-    , datePublished : Maybe Posix
-    , dateUpdated : Maybe Posix
+    , datePublished : Maybe ArticleTime
+    , dateUpdated : Maybe ArticleTime
     }
+
+
+type ArticleTime
+    = Iso8601 Time.Posix
+    | Date Date.Date
 
 
 codec : Codec () Article
@@ -39,14 +45,35 @@ metadataCodec =
         |> Codec.field .title Codec.string
         |> Codec.field .tags (Codec.list Codec.string)
         |> Codec.field .priority Codec.int
-        |> Codec.field .datePublished dateCodec
-        |> Codec.field .dateUpdated dateCodec
+        |> Codec.field .datePublished (Codec.maybe articleTimeCodec)
+        |> Codec.field .dateUpdated (Codec.maybe articleTimeCodec)
         |> Codec.finishRecord
 
 
-dateCodec : Codec () (Maybe Posix)
+articleTimeCodec : Codec () ArticleTime
+articleTimeCodec =
+    Codec.customType
+        (\fiso fdate value ->
+            case value of
+                Iso8601 i ->
+                    fiso i
+
+                Date d ->
+                    fdate d
+        )
+        |> Codec.variant1 Iso8601 isoCodec
+        |> Codec.variant1 Date dateCodec
+        |> Codec.finishCustomType
+
+
+isoCodec : Codec () Time.Posix
+isoCodec =
+    Codec.map Time.millisToPosix Time.posixToMillis Codec.int
+
+
+dateCodec : Codec () Date.Date
 dateCodec =
-    Codec.maybe (Codec.map Time.millisToPosix Time.posixToMillis Codec.int)
+    Codec.map Date.fromRataDie Date.toRataDie Codec.int
 
 
 list : DataSource (List { slug : String, isMarkdown : Bool })
@@ -158,21 +185,26 @@ metadataDecoder =
         |> Decode.andMap (Decode.field "title" Decode.string)
         |> Decode.andMap (Decode.field "tags" tagsDecoder)
         |> Decode.andMap (Decode.field "priority" Decode.int)
-        |> Decode.andMap (Decode.maybe <| Decode.field "date-published" dateDecoder)
-        |> Decode.andMap (Decode.maybe <| Decode.field "date-updated" dateDecoder)
+        |> Decode.andMap (Decode.maybe <| Decode.field "date-published" timeDecoder)
+        |> Decode.andMap (Decode.maybe <| Decode.field "date-updated" timeDecoder)
 
 
-dateDecoder : Decoder Posix
-dateDecoder =
+timeDecoder : Decoder ArticleTime
+timeDecoder =
     Decode.string
         |> Decode.andThen
             (\raw ->
                 case Iso8601.toTime raw of
                     Ok posix ->
-                        Decode.succeed posix
+                        Decode.succeed <| Iso8601 posix
 
                     Err _ ->
-                        Decode.fail "Invalid time"
+                        case List.map String.toInt <| String.split "/" (String.trim raw) of
+                            [ Just m, Just d, Just y ] ->
+                                Decode.succeed <| Date <| Date.fromCalendarDate y (Date.numberToMonth m) d
+
+                            _ ->
+                                Decode.fail "Invalid time"
             )
 
 

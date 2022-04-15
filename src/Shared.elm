@@ -146,7 +146,7 @@ viewToHtml pageView =
                                    ]
                             )
 
-                    Err e ->
+                    Err _ ->
                         Html.text "Error parsing HTML"
 
         MarkdownBody markdown ->
