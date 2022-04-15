@@ -1,11 +1,9 @@
 ---
-​---
 title: Convert your principles into algorithms and have the computer make decisions alongside you
 tags: Principles
 priority: 20
 date-published: 
 date-updated: 
-​---
 ---
 
 At some point I want to create an implementation of this. Dalio likely already has something for this but it's not clear to me that there's any decent publicly usable implementation. 
