@@ -54,13 +54,14 @@ data =
 
 tupleToOrder : ( ArticleTime, Article ) -> ( Int, Int )
 tupleToOrder ( datePublished, article ) =
-    ( -- TODO: Make this more sensibe
-      case datePublished of
-        Iso8601 p ->
-            Date.toRataDie <| Date.fromPosix Time.utc p
+    ( negate <|
+        -- TODO: Make this more sensibe
+        case datePublished of
+            Iso8601 p ->
+                Date.toRataDie <| Date.fromPosix Time.utc p
 
-        Date d ->
-            Date.toRataDie d
+            Date d ->
+                Date.toRataDie d
     , article.metadata.priority
     )
 
