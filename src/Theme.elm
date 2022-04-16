@@ -24,6 +24,7 @@ layout tags view body =
         , Html.article
             [ style "margin-left" rythm
             , style "width" "100%"
+            , style "max-width" "640px"
             ]
             (title :: body)
         ]
