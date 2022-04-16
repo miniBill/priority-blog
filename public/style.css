@@ -36,3 +36,7 @@ img {
 .spaced > * + * {
   margin-top: 0.5rem;
 }
+
+article > * + * {
+  margin-top: 0.5rem;
+}

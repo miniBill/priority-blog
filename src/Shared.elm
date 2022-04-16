@@ -5,6 +5,7 @@ import Data.Article
 import Data.Route
 import DataSource exposing (DataSource)
 import Html exposing (Html)
+import Html.Attributes
 import Html.Parser
 import Html.Parser.Util
 import Markdown.Parser
@@ -115,50 +116,46 @@ view sharedData { route } _ _ pageView =
     }
 
 
-viewToHtml : View msg -> Html msg
+viewToHtml : View msg -> List (Html msg)
 viewToHtml pageView =
     case pageView.body of
         ArticleBody article ->
             if article.isMarkdown then
                 case markdownToHtml article.content of
                     Ok content ->
-                        Html.div []
-                            (content
-                                ++ [ Html.div [] <|
-                                        Html.text "Tags: "
-                                            :: List.intersperse (Html.text ", ")
-                                                (List.map viewTag article.metadata.tags)
-                                   ]
-                            )
+                        content
+                            ++ [ Html.div [] <|
+                                    Html.text "Tags: "
+                                        :: List.intersperse (Html.text ", ")
+                                            (List.map viewTag article.metadata.tags)
+                               ]
 
                     Err e ->
-                        Html.text e
+                        [ Html.text e ]
 
             else
                 case Html.Parser.run article.content of
                     Ok content ->
-                        Html.div []
-                            (Html.Parser.Util.toVirtualDom content
-                                ++ [ Html.div [] <|
-                                        Html.text "Tags: "
-                                            :: List.intersperse (Html.text ", ")
-                                                (List.map viewTag article.metadata.tags)
-                                   ]
-                            )
+                        Html.Parser.Util.toVirtualDom content
+                            ++ [ Html.div [] <|
+                                    Html.text "Tags: "
+                                        :: List.intersperse (Html.text ", ")
+                                            (List.map viewTag article.metadata.tags)
+                               ]
 
                     Err _ ->
-                        Html.text "Error parsing HTML"
+                        [ Html.text "Error parsing HTML" ]
 
         MarkdownBody markdown ->
             case markdownToHtml markdown of
                 Ok content ->
-                    Html.div [] content
+                    content
 
                 Err e ->
-                    Html.text e
+                    [ Html.text e ]
 
-        HtmlBody tag ->
-            tag
+        HtmlBody tags ->
+            tags
 
 
 markdownToHtml : String -> Result String (List (Html msg))

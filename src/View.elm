@@ -5,7 +5,7 @@ import Html exposing (Html)
 
 
 type Body msg
-    = HtmlBody (Html msg)
+    = HtmlBody (List (Html msg))
     | MarkdownBody String
     | ArticleBody ArticleData
 
@@ -29,7 +29,7 @@ map fn doc =
     , body =
         case doc.body of
             HtmlBody body ->
-                HtmlBody <| Html.map fn body
+                HtmlBody <| List.map (Html.map fn) body
 
             MarkdownBody mk ->
                 MarkdownBody mk
@@ -42,5 +42,5 @@ map fn doc =
 placeholder : String -> View msg
 placeholder moduleName =
     { title = Nothing
-    , body = HtmlBody <| Html.text moduleName
+    , body = HtmlBody [ Html.text moduleName ]
     }

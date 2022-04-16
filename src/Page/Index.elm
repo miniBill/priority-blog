@@ -103,7 +103,7 @@ view _ sharedModel static =
             |> List.map (viewArticle sharedModel)
             |> List.intersperse separator
             |> ul [ style "width" "100%" ]
-            |> HtmlBody
+            |> (\l -> HtmlBody [ l ])
     }
 
 

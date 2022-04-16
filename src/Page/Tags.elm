@@ -84,6 +84,5 @@ view _ _ static =
                         , Html.text <| " (" ++ String.fromInt count ++ ")"
                         ]
                 )
-            |> Theme.column [ Html.Attributes.class "spaced" ]
             |> HtmlBody
     }

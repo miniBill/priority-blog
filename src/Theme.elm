@@ -8,22 +8,24 @@ import Route exposing (Route)
 import View exposing (View)
 
 
-layout : List ( String, Int ) -> View msg -> Html msg -> Html msg
-layout tags { title } body =
-    row [ padding ]
-        [ sidebar tags
-        , div
-            [ style "margin-left" rythm
-            , style "width" "100%"
-            ]
-            [ case title of
+layout : List ( String, Int ) -> View msg -> List (Html msg) -> Html msg
+layout tags view body =
+    let
+        title =
+            case view.title of
                 Just t ->
                     h1 [ style "display" "inline-block" ] [ text t ]
 
                 Nothing ->
                     text ""
-            , body
+    in
+    row [ padding ]
+        [ sidebar tags
+        , Html.article
+            [ style "margin-left" rythm
+            , style "width" "100%"
             ]
+            (title :: body)
         ]
 
 
