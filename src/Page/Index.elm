@@ -140,7 +140,7 @@ viewArticle sharedModel ( datePublished, { slug, metadata } ) =
                     ]
                 ]
     in
-    Route.toLink inner <| Route.Blog__Slug_ { slug = slug }
+    Route.toLink inner <| Route.Slug_ { slug = slug }
 
 
 separator : Html.Html Msg

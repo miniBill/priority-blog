@@ -1,4 +1,4 @@
-module Page.Blog.Slug_ exposing (Data, Model, Msg, page)
+module Page.Slug_ exposing (Data, Model, Msg, page)
 
 import Data.Article as Article exposing (ArticleMetadata)
 import DataSource exposing (DataSource)

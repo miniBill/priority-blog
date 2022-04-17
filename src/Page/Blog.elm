@@ -62,7 +62,7 @@ viewArticleList list =
 
 viewLink : Article -> Html Msg
 viewLink article =
-    Route.Blog__Slug_ { slug = article.slug }
+    Route.Slug_ { slug = article.slug }
         |> Route.toLink
             (\attrs ->
                 let
