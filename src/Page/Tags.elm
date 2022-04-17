@@ -6,13 +6,11 @@ import DataSource exposing (DataSource)
 import Head
 import Head.Seo as Seo
 import Html
-import Html.Attributes
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
 import Route exposing (Route(..))
 import Shared exposing (viewTag)
-import Theme
 import View exposing (Body(..), View)
 
 

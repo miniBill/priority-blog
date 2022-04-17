@@ -5,7 +5,6 @@ import Data.Article
 import Data.Route
 import DataSource exposing (DataSource)
 import Html exposing (Html)
-import Html.Attributes
 import Html.Parser
 import Html.Parser.Util
 import Markdown.Parser
