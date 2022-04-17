@@ -1,6 +1,7 @@
 module Page.Tags.Slug_ exposing (Data, Model, Msg, page)
 
 import Data.Article as Article exposing (Article)
+import Data.Tag as Tag
 import DataSource exposing (DataSource)
 import Head
 import Head.Seo as Seo
@@ -43,7 +44,9 @@ page =
 
 routes : DataSource (List RouteParams)
 routes =
-    DataSource.map (List.map <| \( tag, _ ) -> { slug = tag }) Article.tags
+    DataSource.map
+        (List.map <| \( tag, _ ) -> { slug = Tag.toSlug tag })
+        Article.tags
 
 
 data : RouteParams -> DataSource Data
@@ -56,7 +59,9 @@ data routeParams =
                     articles
                         |> List.filter
                             (\{ metadata } ->
-                                List.member routeParams.slug metadata.tags
+                                List.any
+                                    (\tag -> Tag.toSlug tag == routeParams.slug)
+                                    metadata.tags
                             )
                 }
             )
@@ -84,7 +89,7 @@ head static =
             , dimensions = Nothing
             , mimeType = Nothing
             }
-        , description = "TODO"
+        , description = "Articles with tag: " ++ static.data.tag
         , locale = Nothing
         , title = static.data.tag
         }

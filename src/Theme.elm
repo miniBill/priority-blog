@@ -2,13 +2,14 @@ module Theme exposing (column, layout, priorityBadge, row)
 
 import Color exposing (Color)
 import Data.Route
+import Data.Tag as Tag exposing (Tag)
 import Html exposing (Attribute, Html, a, div, h1, span, text)
 import Html.Attributes exposing (class, style)
 import Route exposing (Route)
 import View exposing (View)
 
 
-layout : List ( String, Int ) -> View msg -> List (Html msg) -> Html msg
+layout : { tags : List ( Tag, Int ) } -> View msg -> List (Html msg) -> Html msg
 layout tags view body =
     let
         title =
@@ -30,7 +31,7 @@ layout tags view body =
         ]
 
 
-sidebar : List ( String, Int ) -> Html msg
+sidebar : { tags : List ( Tag, Int ) } -> Html msg
 sidebar tags =
     column [ class "spaced" ]
         [ routeLink Route.Index
@@ -40,8 +41,8 @@ sidebar tags =
         ]
 
 
-tagCloud : List ( String, Int ) -> Html msg
-tagCloud tags =
+tagCloud : { tags : List ( Tag, Int ) } -> Html msg
+tagCloud { tags } =
     let
         ( minCount, maxCount ) =
             case tags of
@@ -75,7 +76,7 @@ tagCloud tags =
             , scale minCount maxCount minWeight maxWeight count
             )
 
-        toLink ( slug, count ) =
+        toLink ( tag, count ) =
             Route.toLink
                 (\attrs ->
                     let
@@ -87,10 +88,10 @@ tagCloud tags =
                             [ style "font-size" <| String.fromInt size ++ "px"
                             , style "font-weight" <| String.fromInt weight
                             ]
-                            [ text slug ]
+                            [ text <| Tag.name tag ]
                         ]
                 )
-                (Route.Tags__Slug_ { slug = slug })
+                (Route.Tags__Slug_ { slug = Tag.toSlug tag })
     in
     tags
         |> List.sortBy (Tuple.second >> negate)

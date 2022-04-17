@@ -3,6 +3,7 @@ module Shared exposing (Data, Model, Msg(..), SharedMsg(..), template, viewTag)
 import Browser.Navigation
 import Data.Article
 import Data.Route
+import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
 import Html exposing (Html)
 import Html.Parser
@@ -41,7 +42,8 @@ type Msg
 
 
 type alias Data =
-    List ( String, Int )
+    { tags : List ( Tag, Int )
+    }
 
 
 type SharedMsg
@@ -91,6 +93,7 @@ subscriptions _ _ =
 data : DataSource Data
 data =
     Data.Article.tags
+        |> DataSource.map (\tags -> { tags = tags })
 
 
 view :
@@ -170,7 +173,7 @@ markdownToHtml markdown =
             )
 
 
-viewTag : String -> Html msg
+viewTag : Tag -> Html msg
 viewTag tag =
-    Route.Tags__Slug_ { slug = tag }
-        |> Route.toLink (\attrs -> Html.a attrs [ Html.text tag ])
+    Route.Tags__Slug_ { slug = Tag.toSlug tag }
+        |> Route.toLink (\attrs -> Html.a attrs [ Html.text <| Tag.name tag ])

@@ -1,5 +1,6 @@
 module Data.Article exposing (Article, ArticleMetadata, ArticleTime(..), codec, list, listWithMetadata, metadataDecoder, slugToFilePath, tags)
 
+import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
 import DataSource.File
 import DataSource.Glob as Glob
@@ -19,7 +20,7 @@ type alias Article =
 
 type alias ArticleMetadata =
     { title : String
-    , tags : List String
+    , tags : List Tag
     , priority : Int
     , datePublished : Maybe ArticleTime
     , dateUpdated : Maybe ArticleTime
@@ -43,11 +44,19 @@ metadataCodec : Codec () ArticleMetadata
 metadataCodec =
     Codec.record ArticleMetadata
         |> Codec.field .title Codec.string
-        |> Codec.field .tags (Codec.list Codec.string)
+        |> Codec.field .tags tagListCodec
         |> Codec.field .priority Codec.int
         |> Codec.field .datePublished (Codec.maybe articleTimeCodec)
         |> Codec.field .dateUpdated (Codec.maybe articleTimeCodec)
         |> Codec.finishRecord
+
+
+tagListCodec : Codec () (List Tag)
+tagListCodec =
+    Codec.map
+        (List.filterMap Tag.fromString)
+        (List.map Tag.name)
+        (Codec.list Codec.string)
 
 
 articleTimeCodec : Codec () ArticleTime
@@ -126,22 +135,21 @@ listWithMetadata =
            )
 
 
-tags : DataSource (List ( String, Int ))
+tags : DataSource (List ( Tag, Int ))
 tags =
     listWithMetadata
         |> DataSource.map
             (\articles ->
                 articles
                     |> List.concatMap (.metadata >> .tags)
-                    |> List.gatherEquals
+                    |> List.gatherEqualsBy Tag.toSlug
                     |> List.map (\( tag, copies ) -> ( tag, 1 + List.length copies ))
             )
         |> (-- FIXME
-            if False then
-                DataSource.distillSerializeCodec "tags" (Codec.list <| Codec.tuple Codec.string Codec.int)
-
-            else
-                identity
+            -- if False then
+            --     DataSource.distillSerializeCodec "tags" (Codec.list <| Codec.tuple Codec.string Codec.int)
+            -- else
+            identity
            )
 
 
@@ -208,7 +216,7 @@ timeDecoder =
             )
 
 
-tagsDecoder : Decoder (List String)
+tagsDecoder : Decoder (List Tag)
 tagsDecoder =
-    Decode.map (String.split " ")
+    Decode.map (String.split " " >> List.filterMap Tag.fromString)
         Decode.string

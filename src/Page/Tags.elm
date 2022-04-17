@@ -2,6 +2,7 @@ module Page.Tags exposing (Data, Model, Msg, page)
 
 import Data.Article as Article
 import Data.Route as Route
+import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
 import Head
 import Head.Seo as Seo
@@ -36,7 +37,7 @@ page =
 
 
 type alias Data =
-    List ( String, Int )
+    List ( Tag, Int )
 
 
 data : DataSource Data
@@ -73,7 +74,7 @@ view _ _ static =
     { title = Route.routeToLabel Tags
     , body =
         static.data
-            |> List.sortBy Tuple.first
+            |> List.sortBy (Tuple.first >> Tag.toSlug)
             |> List.sortBy (Tuple.second >> negate)
             |> List.map
                 (\( tag, count ) ->
