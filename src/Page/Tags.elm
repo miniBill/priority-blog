@@ -60,7 +60,7 @@ head _ =
             }
         , description = "TODO"
         , locale = Nothing
-        , title = "TODO title" -- metadata.title -- TODO
+        , title = Maybe.withDefault "All tags" <| Route.routeToLabel Tags
         }
         |> Seo.website
 
