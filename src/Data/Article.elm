@@ -211,7 +211,12 @@ redirectLineParser =
     Parser.succeed
         (\slug url metadata ->
             { slug = String.trim slug
-            , url = String.trim url
+            , url =
+                if String.contains ":" url then
+                    String.trim url
+
+                else
+                    "https://" ++ String.trim url
             , metadata = metadata
             }
         )
