@@ -1,4 +1,4 @@
-module Data.Article exposing (Article, ArticleMetadata, ArticleTime(..), codec, list, listWithMetadata, metadataDecoder, slugToFilePath, tags)
+module Data.Article exposing (ArticleMetadata, ArticleTime(..), ArticleWithMetadata, LightArticle(..), codec, list, listWithMetadata, metadataDecoder, slugToFilePath, tags)
 
 import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
@@ -12,7 +12,7 @@ import Serialize as Codec exposing (Codec)
 import Time
 
 
-type alias Article =
+type alias ArticleWithMetadata =
     { slug : String
     , metadata : ArticleMetadata
     }
@@ -32,9 +32,9 @@ type ArticleTime
     | Date Date.Date
 
 
-codec : Codec () Article
+codec : Codec () ArticleWithMetadata
 codec =
-    Codec.record Article
+    Codec.record ArticleWithMetadata
         |> Codec.field .slug Codec.string
         |> Codec.field .metadata metadataCodec
         |> Codec.finishRecord
@@ -85,46 +85,60 @@ dateCodec =
     Codec.map Date.fromRataDie Date.toRataDie Codec.int
 
 
-list : DataSource (List { slug : String, isMarkdown : Bool })
+type LightArticle
+    = ArticleHtml { slug : String }
+    | ArticleMarkdown { slug : String }
+    | ArticleLink { slugs : List String }
+
+
+list : DataSource (List LightArticle)
 list =
     let
         markdowns =
-            Glob.succeed (\slug -> { slug = slug, isMarkdown = True })
+            Glob.succeed (\slug -> ArticleMarkdown { slug = slug })
                 |> Glob.match (Glob.literal "articles/")
                 |> Glob.capture Glob.wildcard
                 |> Glob.match (Glob.literal ".md")
                 |> Glob.toDataSource
 
         htmls =
-            Glob.succeed (\slug -> { slug = slug, isMarkdown = False })
+            Glob.succeed (\slug -> ArticleHtml { slug = slug })
                 |> Glob.match (Glob.literal "articles/")
                 |> Glob.capture Glob.wildcard
                 |> Glob.match (Glob.literal ".html")
                 |> Glob.toDataSource
+
+        links =
+            Glob.succeed
+                (\slug ->
+                    ArticleLink
+                        { slugs =
+                            let
+                                _ =
+                                    Debug.todo
+                            in
+                            [ slug ]
+                        }
+                )
+                |> Glob.match (Glob.literal "redirects/")
+                |> Glob.capture Glob.wildcard
+                |> Glob.toDataSource
     in
-    DataSource.map2 (++)
+    DataSource.map3 (\m h l -> m ++ h ++ l)
         markdowns
         htmls
+        links
 
 
-listWithMetadata : DataSource (List Article)
+listWithMetadata : DataSource (List ArticleWithMetadata)
 listWithMetadata =
     list
         |> DataSource.andThen
-            (\slugs ->
-                slugs
-                    |> List.map
-                        (\{ slug } ->
-                            slugToFilePath slug
-                                |> DataSource.andThen (.path >> DataSource.File.onlyFrontmatter metadataDecoder)
-                                |> DataSource.map
-                                    (\metadata ->
-                                        { slug = slug
-                                        , metadata = metadata
-                                        }
-                                    )
-                        )
+            (\articles ->
+                articles
+                    |> List.map fetchMetadata
                     |> DataSource.combine
+                    |> DataSource.map List.concat
             )
         |> (-- FIXME
             if False then
@@ -133,6 +147,39 @@ listWithMetadata =
             else
                 identity
            )
+
+
+fetchMetadata : LightArticle -> DataSource (List ArticleWithMetadata)
+fetchMetadata article =
+    case article of
+        ArticleHtml { slug } ->
+            slugToFilePath slug
+                |> DataSource.andThen (.path >> DataSource.File.onlyFrontmatter metadataDecoder)
+                |> DataSource.map
+                    (\metadata ->
+                        [ { slug = slug
+                          , metadata = metadata
+                          }
+                        ]
+                    )
+
+        ArticleMarkdown { slug } ->
+            slugToFilePath slug
+                |> DataSource.andThen (.path >> DataSource.File.onlyFrontmatter metadataDecoder)
+                |> DataSource.map
+                    (\metadata ->
+                        [ { slug = slug
+                          , metadata = metadata
+                          }
+                        ]
+                    )
+
+        ArticleLink slugs ->
+            let
+                _ =
+                    Debug.todo
+            in
+            DataSource.succeed []
 
 
 tags : DataSource (List ( Tag, Int ))

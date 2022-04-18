@@ -1,6 +1,6 @@
 module Page.Index exposing (Data, Model, Msg, page)
 
-import Data.Article exposing (Article, ArticleTime(..))
+import Data.Article exposing (ArticleTime(..), ArticleWithMetadata)
 import DataSource exposing (DataSource)
 import Date
 import DateFormat
@@ -39,7 +39,7 @@ page =
 
 
 type alias Data =
-    List ( ArticleTime, Article )
+    List ( ArticleTime, ArticleWithMetadata )
 
 
 data : DataSource Data
@@ -52,7 +52,7 @@ data =
             )
 
 
-tupleToOrder : ( ArticleTime, Article ) -> ( Int, Int )
+tupleToOrder : ( ArticleTime, ArticleWithMetadata ) -> ( Int, Int )
 tupleToOrder ( datePublished, article ) =
     ( negate <|
         -- TODO: Make this more sensibe
@@ -107,7 +107,7 @@ view _ sharedModel static =
     }
 
 
-viewArticle : Shared.Model -> (( ArticleTime, Article ) -> Html Msg)
+viewArticle : Shared.Model -> (( ArticleTime, ArticleWithMetadata ) -> Html Msg)
 viewArticle sharedModel ( datePublished, { slug, metadata } ) =
     let
         inner attrs =

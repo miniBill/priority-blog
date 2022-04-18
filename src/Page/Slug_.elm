@@ -1,6 +1,6 @@
 module Page.Slug_ exposing (Data, Model, Msg, page)
 
-import Data.Article as Article exposing (ArticleMetadata)
+import Data.Article as Article exposing (ArticleMetadata, LightArticle(..))
 import DataSource exposing (DataSource)
 import DataSource.File
 import Head
@@ -41,9 +41,23 @@ page =
         , routes =
             Article.list
                 |> DataSource.map
-                    (List.map <| \{ slug } -> { slug = slug })
+                    (List.concatMap getSlugs)
         }
         |> Page.buildNoState { view = view }
+
+
+getSlugs : LightArticle -> List RouteParams
+getSlugs article =
+    case article of
+        ArticleHtml s ->
+            [ s ]
+
+        ArticleMarkdown s ->
+            [ s ]
+
+        ArticleLink { slugs } ->
+            slugs
+                |> List.map (\slug -> { slug = slug })
 
 
 data : RouteParams -> DataSource Data

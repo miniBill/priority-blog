@@ -1,6 +1,6 @@
 module Page.Blog exposing (Data, Model, Msg, page, viewArticleList)
 
-import Data.Article exposing (Article)
+import Data.Article exposing (ArticleWithMetadata)
 import Data.Route
 import DataSource exposing (DataSource)
 import Head
@@ -29,7 +29,7 @@ type alias RouteParams =
 
 
 type alias Data =
-    List Article
+    List ArticleWithMetadata
 
 
 page : Page RouteParams Data
@@ -52,7 +52,7 @@ view _ _ static =
     }
 
 
-viewArticleList : List Article -> Body Msg
+viewArticleList : List ArticleWithMetadata -> Body Msg
 viewArticleList list =
     list
         |> List.sortBy (\{ metadata } -> metadata.priority)
@@ -60,7 +60,7 @@ viewArticleList list =
         |> HtmlBody
 
 
-viewLink : Article -> Html Msg
+viewLink : ArticleWithMetadata -> Html Msg
 viewLink article =
     Route.Slug_ { slug = article.slug }
         |> Route.toLink

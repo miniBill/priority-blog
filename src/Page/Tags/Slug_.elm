@@ -1,6 +1,6 @@
 module Page.Tags.Slug_ exposing (Data, Model, Msg, page)
 
-import Data.Article as Article exposing (Article)
+import Data.Article as Article exposing (ArticleWithMetadata)
 import Data.Tag as Tag
 import DataSource exposing (DataSource)
 import Head
@@ -28,7 +28,7 @@ type alias RouteParams =
 
 type alias Data =
     { tag : String
-    , articles : List Article
+    , articles : List ArticleWithMetadata
     }
 
 
