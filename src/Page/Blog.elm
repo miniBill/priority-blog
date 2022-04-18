@@ -43,7 +43,7 @@ type alias Item =
 
 type LinkOrArticle
     = Link String
-    | Article { slug : String }
+    | Article { article : String }
 
 
 page : Page RouteParams Data
@@ -100,7 +100,7 @@ viewLink item =
     in
     case item.page of
         Article slug ->
-            Route.toLink link (Route.Slug_ slug)
+            Route.toLink link (Route.Article_ slug)
 
         Link url ->
             link [ HA.href url ]
@@ -120,7 +120,7 @@ articleToItem article =
                 { title = metadata.title
                 , tags = metadata.tags
                 , priority = metadata.priority
-                , page = Article { slug = slug }
+                , page = Article { article = slug }
                 }
 
         ArticleLinkWithMetadata { url, metadata } ->

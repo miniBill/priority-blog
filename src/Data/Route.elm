@@ -12,7 +12,7 @@ routeToLabel route =
         Blog ->
             Just "Blog index (by priority)"
 
-        Slug_ _ ->
+        Article_ _ ->
             Nothing
 
         Tags ->

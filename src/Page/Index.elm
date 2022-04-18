@@ -158,7 +158,7 @@ viewArticle sharedModel ( datePublished, item ) =
     in
     case item.page of
         Blog.Article slug ->
-            Route.toLink inner (Route.Slug_ slug)
+            Route.toLink inner (Route.Article_ slug)
 
         Blog.Link url ->
             inner [ HA.href url ]

@@ -1,4 +1,4 @@
-module Page.Slug_ exposing (Data, Model, Msg, page)
+module Page.Article_ exposing (Data, Model, Msg, page)
 
 import Data.Article as Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..))
 import Data.Tag as Tag
@@ -26,7 +26,7 @@ type alias Msg =
 
 
 type alias RouteParams =
-    { slug : String
+    { article : String
     }
 
 
@@ -52,24 +52,24 @@ getRouteParams : Article -> RouteParams
 getRouteParams article =
     case article of
         ArticleFile { slug } ->
-            { slug = slug }
+            { article = slug }
 
         ArticleLink { slug } ->
-            { slug = slug }
+            { article = slug }
 
 
 data : RouteParams -> DataSource Data
-data { slug } =
+data params =
     Article.list
         |> DataSource.andThen
             (\articles ->
                 case
                     List.Extra.find
-                        (\article -> (getRouteParams article).slug == slug)
+                        (\article -> getRouteParams article == params)
                         articles
                 of
                     Nothing ->
-                        DataSource.fail <| "Article " ++ slug ++ " not found "
+                        DataSource.fail <| "Article " ++ params.article ++ " not found "
 
                     Just article ->
                         case article of
@@ -96,7 +96,7 @@ data { slug } =
                                 Article.fetchRedirectMetadata redirect
                                     |> DataSource.map (\{ url } -> Redirect url)
             )
-        |> DataSource.distillSerializeCodec ("article-" ++ slug) codec
+        |> DataSource.distillSerializeCodec ("article-" ++ params.article) codec
 
 
 codec : Codec () Data
