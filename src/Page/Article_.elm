@@ -172,7 +172,15 @@ head static =
             common metadata
 
         Redirect url ->
-            [ Head.metaRedirect <| Head.raw <| "0; url=" ++ url ]
+            let
+                fixedUrl =
+                    if String.contains ":" url then
+                        url
+
+                    else
+                        "https://" ++ url
+            in
+            [ Head.metaRedirect <| Head.raw <| "0; url=" ++ fixedUrl ]
 
 
 toSeoTime : ArticleTime -> Maybe String
