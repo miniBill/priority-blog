@@ -5,7 +5,8 @@ import Data.Article
 import Data.Route
 import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
-import Html exposing (Html)
+import Html as H exposing (Html)
+import Html.Attributes as HA
 import Html.Parser
 import Html.Parser.Util
 import Markdown.Parser
@@ -126,27 +127,27 @@ viewToHtml pageView =
                 case markdownToHtml article.content of
                     Ok content ->
                         content
-                            ++ [ Html.div [] <|
-                                    Html.text "Tags: "
-                                        :: List.intersperse (Html.text ", ")
+                            ++ [ H.div [] <|
+                                    H.text "Tags: "
+                                        :: List.intersperse (H.text ", ")
                                             (List.map viewTag article.metadata.tags)
                                ]
 
                     Err e ->
-                        [ Html.text e ]
+                        [ H.text e ]
 
             else
                 case Html.Parser.run article.content of
                     Ok content ->
                         Html.Parser.Util.toVirtualDom content
-                            ++ [ Html.div [] <|
-                                    Html.text "Tags: "
-                                        :: List.intersperse (Html.text ", ")
+                            ++ [ H.div [] <|
+                                    H.text "Tags: "
+                                        :: List.intersperse (H.text ", ")
                                             (List.map viewTag article.metadata.tags)
                                ]
 
                     Err _ ->
-                        [ Html.text "Error parsing HTML" ]
+                        [ H.text "Error parsing HTML" ]
 
         MarkdownBody markdown ->
             case markdownToHtml markdown of
@@ -154,7 +155,7 @@ viewToHtml pageView =
                     content
 
                 Err e ->
-                    [ Html.text e ]
+                    [ H.text e ]
 
         HtmlBody tags ->
             tags
@@ -176,4 +177,4 @@ markdownToHtml markdown =
 viewTag : Tag -> Html msg
 viewTag tag =
     Route.Tags__Slug_ { slug = Tag.toSlug tag }
-        |> Route.toLink (\attrs -> Html.a attrs [ Html.text <| Tag.name tag ])
+        |> Route.toLink (\attrs -> H.a attrs [ H.text <| Tag.name tag ])

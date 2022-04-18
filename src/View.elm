@@ -1,7 +1,7 @@
 module View exposing (ArticleData, Body(..), View, map, placeholder)
 
 import Data.Article exposing (ArticleMetadata)
-import Html exposing (Html)
+import Html as H exposing (Html)
 
 
 type Body msg
@@ -29,7 +29,7 @@ map fn doc =
     , body =
         case doc.body of
             HtmlBody body ->
-                HtmlBody <| List.map (Html.map fn) body
+                HtmlBody <| List.map (H.map fn) body
 
             MarkdownBody mk ->
                 MarkdownBody mk
@@ -42,5 +42,5 @@ map fn doc =
 placeholder : String -> View msg
 placeholder moduleName =
     { title = Nothing
-    , body = HtmlBody [ Html.text moduleName ]
+    , body = HtmlBody [ H.text moduleName ]
     }

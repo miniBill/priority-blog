@@ -2,7 +2,7 @@ module Api exposing (routes)
 
 import ApiRoute
 import DataSource exposing (DataSource)
-import Html exposing (Html)
+import Html as H exposing (Html)
 import Route exposing (Route)
 
 

@@ -6,8 +6,8 @@ import Date
 import DateFormat
 import Head
 import Head.Seo as Seo
-import Html exposing (Html, a, b, h2, hr, li, text, ul)
-import Html.Attributes exposing (style)
+import Html as H exposing (Html)
+import Html.Attributes as HA
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
@@ -102,7 +102,7 @@ view _ sharedModel static =
         static.data
             |> List.map (viewArticle sharedModel)
             |> List.intersperse separator
-            |> ul [ style "width" "100%" ]
+            |> H.ul [ HA.style "width" "100%" ]
             |> (\l -> HtmlBody [ l ])
     }
 
@@ -111,17 +111,17 @@ viewArticle : Shared.Model -> (( ArticleTime, Article ) -> Html Msg)
 viewArticle sharedModel ( datePublished, { slug, metadata } ) =
     let
         inner attrs =
-            a
+            H.a
                 (attrs
-                    ++ [ Html.Attributes.style "text-decoration" "none"
-                       , Html.Attributes.style "color" "black"
+                    ++ [ HA.style "text-decoration" "none"
+                       , HA.style "color" "black"
                        ]
                 )
-                [ li []
-                    [ h2 [] [ text metadata.title ]
-                    , text "Published: "
-                    , b []
-                        [ text <|
+                [ H.li []
+                    [ H.h2 [] [ H.text metadata.title ]
+                    , H.text "Published: "
+                    , H.b []
+                        [ H.text <|
                             case datePublished of
                                 Iso8601 iso ->
                                     DateFormat.format
@@ -143,8 +143,8 @@ viewArticle sharedModel ( datePublished, { slug, metadata } ) =
     Route.toLink inner <| Route.Slug_ { slug = slug }
 
 
-separator : Html.Html Msg
+separator : Html Msg
 separator =
-    li [ style "width" "100%" ]
-        [ hr [ style "width" "100%" ] []
+    H.li [ HA.style "width" "100%" ]
+        [ H.hr [ HA.style "width" "100%" ] []
         ]

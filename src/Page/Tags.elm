@@ -6,7 +6,7 @@ import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
 import Head
 import Head.Seo as Seo
-import Html
+import Html as H
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
@@ -78,9 +78,9 @@ view _ _ static =
             |> List.sortBy (Tuple.second >> negate)
             |> List.map
                 (\( tag, count ) ->
-                    Html.div []
+                    H.div []
                         [ viewTag tag
-                        , Html.text <| " (" ++ String.fromInt count ++ ")"
+                        , H.text <| " (" ++ String.fromInt count ++ ")"
                         ]
                 )
             |> HtmlBody

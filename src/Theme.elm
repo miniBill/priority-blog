@@ -3,8 +3,8 @@ module Theme exposing (column, layout, priorityBadge, row)
 import Color exposing (Color)
 import Data.Route
 import Data.Tag as Tag exposing (Tag)
-import Html exposing (Attribute, Html, a, div, h1, span, text)
-import Html.Attributes exposing (class, style)
+import Html as H exposing (Attribute, Html)
+import Html.Attributes as HA
 import Route exposing (Route)
 import View exposing (View)
 
@@ -15,17 +15,17 @@ layout tags view body =
         title =
             case view.title of
                 Just t ->
-                    h1 [ style "display" "inline-block" ] [ text t ]
+                    H.h1 [ HA.style "display" "inline-block" ] [ H.text t ]
 
                 Nothing ->
-                    text ""
+                    H.text ""
     in
     row [ padding ]
         [ sidebar tags
-        , Html.article
-            [ style "margin-left" rythm
-            , style "width" "100%"
-            , style "max-width" "640px"
+        , H.article
+            [ HA.style "margin-left" rythm
+            , HA.style "width" "100%"
+            , HA.style "max-width" "640px"
             ]
             (title :: body)
         ]
@@ -33,7 +33,7 @@ layout tags view body =
 
 sidebar : { tags : List ( Tag, Int ) } -> Html msg
 sidebar tags =
-    column [ class "spaced" ]
+    column [ HA.class "spaced" ]
         [ routeLink Route.Index
         , routeLink Route.Blog
         , routeLink Route.Tags
@@ -83,12 +83,12 @@ tagCloud { tags } =
                         ( size, weight ) =
                             tagSizeAndWeight count
                     in
-                    a attrs
-                        [ span
-                            [ style "font-size" <| String.fromInt size ++ "px"
-                            , style "font-weight" <| String.fromInt weight
+                    H.a attrs
+                        [ H.span
+                            [ HA.style "font-size" <| String.fromInt size ++ "px"
+                            , HA.style "font-weight" <| String.fromInt weight
                             ]
-                            [ text <| Tag.name tag ]
+                            [ H.text <| Tag.name tag ]
                         ]
                 )
                 (Route.Tags__Slug_ { slug = Tag.toSlug tag })
@@ -96,15 +96,15 @@ tagCloud { tags } =
     tags
         |> List.sortBy (Tuple.second >> negate)
         |> List.map toLink
-        |> List.intersperse (text " ")
-        |> div []
+        |> List.intersperse (H.text " ")
+        |> H.div []
 
 
 routeLink : Route -> Html msg
 routeLink route =
     let
         toSidebarLink name attrs =
-            div [] [ text "∘ ", a attrs [ text name ] ]
+            H.div [] [ H.text "∘ ", H.a attrs [ H.text name ] ]
     in
     Data.Route.routeToLabel route
         |> Maybe.map
@@ -113,12 +113,12 @@ routeLink route =
                     (toSidebarLink label)
                     route
             )
-        |> Maybe.withDefault (text "")
+        |> Maybe.withDefault (H.text "")
 
 
 padding : Attribute msg
 padding =
-    style "padding" rythm
+    HA.style "padding" rythm
 
 
 rythm : String
@@ -128,9 +128,9 @@ rythm =
 
 column : List (Attribute msg) -> List (Html msg) -> Html msg
 column attrs children =
-    div
-        (style "display" "flex"
-            :: style "flex-direction" "column"
+    H.div
+        (HA.style "display" "flex"
+            :: HA.style "flex-direction" "column"
             :: attrs
         )
         children
@@ -138,8 +138,8 @@ column attrs children =
 
 row : List (Attribute msg) -> List (Html msg) -> Html msg
 row attrs children =
-    div
-        (style "display" "flex"
+    H.div
+        (HA.style "display" "flex"
             :: attrs
         )
         children
@@ -151,13 +151,13 @@ priorityBadge priority =
         color =
             priorityToColor priority
     in
-    div
-        [ style "background-color" <| Color.toCssString color
-        , style "color" <| Color.toCssString <| fontColor color
-        , style "padding" "0.1rem"
-        , style "display" "inline-block"
+    H.div
+        [ HA.style "background-color" <| Color.toCssString color
+        , HA.style "color" <| Color.toCssString <| fontColor color
+        , HA.style "padding" "0.1rem"
+        , HA.style "display" "inline-block"
         ]
-        [ text <| String.fromInt priority ]
+        [ H.text <| String.fromInt priority ]
 
 
 fontColor : Color -> Color

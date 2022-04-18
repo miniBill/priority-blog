@@ -5,8 +5,8 @@ import Data.Route
 import DataSource exposing (DataSource)
 import Head
 import Head.Seo as Seo
-import Html exposing (Html)
-import Html.Attributes
+import Html as H exposing (Html)
+import Html.Attributes as HA
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
@@ -68,19 +68,19 @@ viewLink article =
                 let
                     tags =
                         List.map Shared.viewTag article.metadata.tags
-                            |> List.intersperse (Html.text ", ")
-                            |> Html.div
-                                [ Html.Attributes.style "display" "inline-block"
-                                , Html.Attributes.style "font-size" "0.8rem"
+                            |> List.intersperse (H.text ", ")
+                            |> H.div
+                                [ HA.style "display" "inline-block"
+                                , HA.style "font-size" "0.8rem"
                                 ]
                 in
-                Html.div []
+                H.div []
                     [ Theme.priorityBadge article.metadata.priority
-                    , Html.text " "
-                    , Html.a
+                    , H.text " "
+                    , H.a
                         attrs
-                        [ Html.text article.metadata.title ]
-                    , Html.text " - "
+                        [ H.text article.metadata.title ]
+                    , H.text " - "
                     , tags
                     ]
             )
