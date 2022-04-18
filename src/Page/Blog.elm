@@ -11,7 +11,7 @@ import Html.Attributes as HA
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
-import Route
+import Route exposing (Route)
 import Shared
 import Theme
 import View exposing (Body(..), View)
@@ -35,7 +35,7 @@ type alias Data =
 
 type alias Item =
     { priority : Int
-    , slug : String
+    , route : Route
     , tags : List Tag
     , title : String
     }
@@ -71,28 +71,28 @@ viewArticleList list =
 
 viewLink : Item -> Html Msg
 viewLink item =
-    Route.Slug_ { slug = item.slug }
-        |> Route.toLink
-            (\attrs ->
-                let
-                    tags =
-                        List.map Shared.viewTag item.tags
-                            |> List.intersperse (H.text ", ")
-                            |> H.div
-                                [ HA.style "display" "inline-block"
-                                , HA.style "font-size" "0.8rem"
-                                ]
-                in
-                H.div []
-                    [ Theme.priorityBadge item.priority
-                    , H.text " "
-                    , H.a
-                        attrs
-                        [ H.text item.title ]
-                    , H.text " - "
-                    , tags
-                    ]
-            )
+    Route.toLink
+        (\attrs ->
+            let
+                tags =
+                    List.map Shared.viewTag item.tags
+                        |> List.intersperse (H.text ", ")
+                        |> H.div
+                            [ HA.style "display" "inline-block"
+                            , HA.style "font-size" "0.8rem"
+                            ]
+            in
+            H.div []
+                [ Theme.priorityBadge item.priority
+                , H.text " "
+                , H.a
+                    attrs
+                    [ H.text item.title ]
+                , H.text " - "
+                , tags
+                ]
+        )
+        item.route
 
 
 data : DataSource Data
@@ -109,7 +109,7 @@ articleToItem article =
                 { title = metadata.title
                 , tags = metadata.tags
                 , priority = metadata.priority
-                , slug = slug
+                , route = Route.Slug_ { slug = slug }
                 }
 
         ArticleLinkWithMetadata { slug, metadata } ->
@@ -118,7 +118,7 @@ articleToItem article =
                     { title = title
                     , tags = metadata.tags
                     , priority = priority
-                    , slug = slug
+                    , route = Route.Slug_ { slug = slug }
                     }
                 )
                 metadata.title

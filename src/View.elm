@@ -8,6 +8,7 @@ type Body msg
     = HtmlBody (List (Html msg))
     | MarkdownBody String
     | ArticleBody ArticleData
+    | RedirectBody String
 
 
 type alias ArticleData =
@@ -36,6 +37,9 @@ map fn doc =
 
             ArticleBody article ->
                 ArticleBody article
+
+            RedirectBody url ->
+                RedirectBody url
     }
 
 

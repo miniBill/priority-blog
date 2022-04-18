@@ -1,16 +1,20 @@
 module Page.Slug_ exposing (Data, Model, Msg, page)
 
-import Data.Article as Article exposing (Article(..), ArticleMetadata)
+import Data.Article as Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..))
+import Data.Tag as Tag
 import DataSource exposing (DataSource)
 import DataSource.File
 import Head
 import Head.Seo as Seo
+import Iso8601
+import List.Extra
 import OptimizedDecoder as Decode
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
+import Serialize as Codec exposing (Codec)
 import Shared
-import View exposing (Body(..), View)
+import View exposing (ArticleData, Body(..), View)
 
 
 type alias Model =
@@ -26,11 +30,9 @@ type alias RouteParams =
     }
 
 
-type alias Data =
-    { content : String
-    , isMarkdown : Bool
-    , metadata : ArticleMetadata
-    }
+type Data
+    = HtmlBody ArticleData
+    | Redirect String
 
 
 page : Page RouteParams Data
@@ -39,61 +41,144 @@ page =
         { head = head
         , data = data
         , routes =
-            Article.list
-                |> DataSource.map
-                    (List.filterMap getSlug)
+            DataSource.map
+                (List.map getRouteParams)
+                Article.list
         }
         |> Page.buildNoState { view = view }
 
 
-getSlug : Article -> Maybe RouteParams
-getSlug article =
+getRouteParams : Article -> RouteParams
+getRouteParams article =
     case article of
         ArticleFile { slug } ->
-            Just { slug = slug }
+            { slug = slug }
 
-        ArticleLink _ ->
-            Nothing
+        ArticleLink { slug } ->
+            { slug = slug }
 
 
 data : RouteParams -> DataSource Data
 data { slug } =
-    Article.articleFileToFilePath { slug = slug }
+    Article.list
         |> DataSource.andThen
-            (\{ path, isMarkdown } ->
-                DataSource.File.bodyWithFrontmatter
-                    (\content ->
-                        Decode.map
-                            (\metadata ->
-                                { content = content
-                                , isMarkdown = isMarkdown
-                                , metadata = metadata
-                                }
-                            )
-                            Article.metadataDecoder
-                    )
-                    path
+            (\articles ->
+                case
+                    List.Extra.find
+                        (\article -> (getRouteParams article).slug == slug)
+                        articles
+                of
+                    Nothing ->
+                        DataSource.fail <| "Article " ++ slug ++ " not found "
+
+                    Just article ->
+                        case article of
+                            ArticleFile f ->
+                                let
+                                    path =
+                                        Article.getArticlePath f
+                                in
+                                DataSource.File.bodyWithFrontmatter
+                                    (\content ->
+                                        Decode.map
+                                            (\metadata ->
+                                                HtmlBody
+                                                    { content = content
+                                                    , isMarkdown = f.isMarkdown
+                                                    , metadata = metadata
+                                                    }
+                                            )
+                                            Article.metadataDecoder
+                                    )
+                                    path
+
+                            ArticleLink redirect ->
+                                Article.fetchRedirectMetadata redirect
+                                    |> DataSource.map (\{ url } -> Redirect url)
             )
+        |> DataSource.distillSerializeCodec ("article-" ++ slug) codec
+
+
+codec : Codec () Data
+codec =
+    Codec.customType
+        (\fhtml fredirect value ->
+            case value of
+                HtmlBody h ->
+                    fhtml h
+
+                Redirect r ->
+                    fredirect r
+        )
+        |> Codec.variant1 HtmlBody htmlBodyCodec
+        |> Codec.variant1 Redirect Codec.string
+        |> Codec.finishCustomType
+
+
+htmlBodyCodec :
+    Codec
+        ()
+        { content : String
+        , isMarkdown : Bool
+        , metadata : ArticleMetadata
+        }
+htmlBodyCodec =
+    Codec.record
+        (\content isMarkdown metadata ->
+            { content = content
+            , isMarkdown = isMarkdown
+            , metadata = metadata
+            }
+        )
+        |> Codec.field .content Codec.string
+        |> Codec.field .isMarkdown Codec.bool
+        |> Codec.field .metadata Article.articleMetadataCodec
+        |> Codec.finishRecord
 
 
 head :
     StaticPayload Data RouteParams
     -> List Head.Tag
 head static =
-    Seo.summary
-        { canonicalUrlOverride = Nothing
-        , siteName = "elm-pages"
-        , image =
-            { url = Pages.Url.external "TODO"
-            , alt = "elm-pages logo"
-            , dimensions = Nothing
-            , mimeType = Nothing
-            }
-        , description = "TODO"
-        , locale = Nothing
-        , title = static.data.metadata.title
-        }
-        |> Seo.website
+    let
+        common metadata =
+            Seo.summary
+                { canonicalUrlOverride = Nothing
+                , siteName = "Incrium"
+                , image =
+                    { url = Pages.Url.external "TODO"
+                    , alt = "Incrium's logo"
+                    , dimensions = Nothing
+                    , mimeType = Nothing
+                    }
+                , description = ""
+                , locale = Just "en"
+                , title = metadata.title
+                }
+                |> Seo.article
+                    { tags = List.map Tag.name metadata.tags
+                    , publishedTime = Maybe.andThen toSeoTime metadata.datePublished
+                    , modifiedTime = Maybe.andThen toSeoTime metadata.dateUpdated
+                    , expirationTime = Nothing
+                    , section = Nothing
+                    }
+    in
+    case static.data of
+        HtmlBody { metadata } ->
+            common metadata
+
+        Redirect url ->
+            [ Head.metaRedirect <| Head.raw <| "0; url=" ++ url ]
+
+
+toSeoTime : ArticleTime -> Maybe String
+toSeoTime time =
+    case time of
+        Iso8601 t ->
+            Just <| Iso8601.fromTime t
+
+        Date _ ->
+            Nothing
 
 
 view :
@@ -102,6 +187,13 @@ view :
     -> StaticPayload Data RouteParams
     -> View Msg
 view _ _ static =
-    { title = Just <| static.data.metadata.title ++ " (" ++ String.fromInt static.data.metadata.priority ++ ")"
-    , body = ArticleBody static.data
-    }
+    case static.data of
+        HtmlBody body ->
+            { title = Just <| body.metadata.title ++ " (" ++ String.fromInt body.metadata.priority ++ ")"
+            , body = ArticleBody body
+            }
+
+        Redirect url ->
+            { title = Just <| "Redirecting to " ++ url
+            , body = RedirectBody url
+            }

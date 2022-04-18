@@ -9,6 +9,7 @@ import Page exposing (Page, StaticPayload)
 import Page.Blog as Blog
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
+import Route exposing (Route(..))
 import Serialize as Codec exposing (Codec)
 import Shared
 import View exposing (View)
@@ -80,18 +81,46 @@ dataCodec =
 itemCodec : Codec () Blog.Item
 itemCodec =
     Codec.record
-        (\priority slug tags title ->
+        (\priority route tags title ->
             { priority = priority
-            , slug = slug
+            , route = route
             , tags = tags
             , title = title
             }
         )
         |> Codec.field .priority Codec.int
-        |> Codec.field .slug Codec.string
+        |> Codec.field .route routeCodec
         |> Codec.field .tags Tag.listCodec
         |> Codec.field .title Codec.string
         |> Codec.finishRecord
+
+
+routeCodec : Codec () Route
+routeCodec =
+    Codec.customType
+        (\ftag ftags farticle fblog findex value ->
+            case value of
+                Route.Tags__Slug_ { slug } ->
+                    ftag slug
+
+                Route.Tags ->
+                    ftags
+
+                Route.Slug_ { slug } ->
+                    farticle slug
+
+                Route.Blog ->
+                    fblog
+
+                Route.Index ->
+                    findex
+        )
+        |> Codec.variant1 (\slug -> Route.Tags__Slug_ { slug = slug }) Codec.string
+        |> Codec.variant0 Route.Tags
+        |> Codec.variant1 (\slug -> Route.Slug_ { slug = slug }) Codec.string
+        |> Codec.variant0 Route.Blog
+        |> Codec.variant0 Route.Index
+        |> Codec.finishCustomType
 
 
 head :

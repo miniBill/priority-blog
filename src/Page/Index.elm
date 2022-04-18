@@ -124,7 +124,7 @@ view _ sharedModel static =
 
 
 viewArticle : Shared.Model -> (( ArticleTime, Blog.Item ) -> Html Msg)
-viewArticle sharedModel ( datePublished, { slug, title } ) =
+viewArticle sharedModel ( datePublished, { route, title } ) =
     let
         inner attrs =
             H.a
@@ -156,7 +156,7 @@ viewArticle sharedModel ( datePublished, { slug, title } ) =
                     ]
                 ]
     in
-    Route.toLink inner <| Route.Slug_ { slug = slug }
+    Route.toLink inner route
 
 
 separator : Html Msg

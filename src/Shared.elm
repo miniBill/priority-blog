@@ -108,7 +108,7 @@ view :
     -> View msg
     -> { body : Html msg, title : String }
 view sharedData { route } _ _ pageView =
-    { body = Theme.layout sharedData pageView <| viewToHtml pageView
+    { body = viewToHtml sharedData pageView
     , title =
         pageView.title
             |> Maybe.withDefault
@@ -119,46 +119,54 @@ view sharedData { route } _ _ pageView =
     }
 
 
-viewToHtml : View msg -> List (Html msg)
-viewToHtml pageView =
+viewToHtml : Data -> View msg -> Html msg
+viewToHtml sharedData pageView =
     case pageView.body of
         ArticleBody article ->
-            if article.isMarkdown then
-                case markdownToHtml article.content of
+            Theme.layout sharedData pageView <|
+                if article.isMarkdown then
+                    case markdownToHtml article.content of
+                        Ok content ->
+                            content
+                                ++ [ H.div [] <|
+                                        H.text "Tags: "
+                                            :: List.intersperse (H.text ", ")
+                                                (List.map viewTag article.metadata.tags)
+                                   ]
+
+                        Err e ->
+                            [ H.text e ]
+
+                else
+                    case Html.Parser.run article.content of
+                        Ok content ->
+                            Html.Parser.Util.toVirtualDom content
+                                ++ [ H.div [] <|
+                                        H.text "Tags: "
+                                            :: List.intersperse (H.text ", ")
+                                                (List.map viewTag article.metadata.tags)
+                                   ]
+
+                        Err _ ->
+                            [ H.text "Error parsing HTML" ]
+
+        MarkdownBody markdown ->
+            Theme.layout sharedData pageView <|
+                case markdownToHtml markdown of
                     Ok content ->
                         content
-                            ++ [ H.div [] <|
-                                    H.text "Tags: "
-                                        :: List.intersperse (H.text ", ")
-                                            (List.map viewTag article.metadata.tags)
-                               ]
 
                     Err e ->
                         [ H.text e ]
 
-            else
-                case Html.Parser.run article.content of
-                    Ok content ->
-                        Html.Parser.Util.toVirtualDom content
-                            ++ [ H.div [] <|
-                                    H.text "Tags: "
-                                        :: List.intersperse (H.text ", ")
-                                            (List.map viewTag article.metadata.tags)
-                               ]
-
-                    Err _ ->
-                        [ H.text "Error parsing HTML" ]
-
-        MarkdownBody markdown ->
-            case markdownToHtml markdown of
-                Ok content ->
-                    content
-
-                Err e ->
-                    [ H.text e ]
-
         HtmlBody tags ->
-            tags
+            Theme.layout sharedData pageView tags
+
+        RedirectBody url ->
+            H.span []
+                [ H.text "Redirecting to "
+                , H.a [ HA.href url ] [ H.text url ]
+                ]
 
 
 markdownToHtml : String -> Result String (List (Html msg))

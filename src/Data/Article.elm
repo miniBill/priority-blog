@@ -1,4 +1,4 @@
-module Data.Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..), Redirect, articleFileToFilePath, codec, list, listWithMetadata, metadataDecoder, tags)
+module Data.Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..), Redirect, articleMetadataCodec, codec, fetchRedirectMetadata, getArticlePath, list, listWithMetadata, metadataDecoder, tags)
 
 import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
@@ -305,20 +305,13 @@ listWithMetadata =
 fetchMetadata : Article -> DataSource ArticleWithMetadata
 fetchMetadata article =
     case article of
-        ArticleLink { slug, file } ->
-            parseRedirectsFile file
-                |> DataSource.andThen
-                    (\redirects ->
-                        redirects
-                            |> List.Extra.find (\redirect -> redirect.slug == slug)
-                            |> Maybe.map
-                                (\redirect -> DataSource.succeed <| ArticleLinkWithMetadata redirect)
-                            |> Maybe.withDefault (DataSource.fail "Redirect not found")
-                    )
+        ArticleLink data ->
+            fetchRedirectMetadata data
+                |> DataSource.map ArticleLinkWithMetadata
 
         ArticleFile articleFile ->
-            articleFileToFilePath articleFile
-                |> DataSource.andThen (.path >> DataSource.File.onlyFrontmatter metadataDecoder)
+            getArticlePath articleFile
+                |> DataSource.File.onlyFrontmatter metadataDecoder
                 |> DataSource.map
                     (\metadata ->
                         ArticleFileWithMetadata
@@ -326,6 +319,19 @@ fetchMetadata article =
                             , metadata = metadata
                             }
                     )
+
+
+fetchRedirectMetadata : { file : String, slug : String } -> DataSource { slug : String, url : String, metadata : LinkMetadata }
+fetchRedirectMetadata { file, slug } =
+    parseRedirectsFile file
+        |> DataSource.andThen
+            (\redirects ->
+                redirects
+                    |> List.Extra.find (\redirect -> redirect.slug == slug)
+                    |> Maybe.map
+                        (\redirect -> DataSource.succeed redirect)
+                    |> Maybe.withDefault (DataSource.fail "Redirect not found")
+            )
 
 
 tags : DataSource (List ( Tag, Int ))
@@ -354,38 +360,13 @@ tags =
            )
 
 
-articleFileToFilePath : { a | slug : String } -> DataSource { path : String, isMarkdown : Bool }
-articleFileToFilePath { slug } =
-    let
-        mdPath =
-            "articles/" ++ slug ++ ".md"
+getArticlePath : { slug : String, isMarkdown : Bool } -> String
+getArticlePath { slug, isMarkdown } =
+    if isMarkdown then
+        "articles/" ++ slug ++ ".md"
 
-        markdowns =
-            Glob.succeed { path = mdPath, isMarkdown = True }
-                |> Glob.match (Glob.literal mdPath)
-                |> Glob.toDataSource
-
-        htmlPath =
-            "articles/" ++ slug ++ ".html"
-
-        htmls =
-            Glob.succeed { path = htmlPath, isMarkdown = False }
-                |> Glob.match (Glob.literal htmlPath)
-                |> Glob.toDataSource
-    in
-    DataSource.map2
-        (\m h -> List.head <| m ++ h)
-        markdowns
-        htmls
-        |> DataSource.andThen
-            (\h ->
-                case h of
-                    Nothing ->
-                        DataSource.fail "Article not found"
-
-                    Just c ->
-                        DataSource.succeed c
-            )
+    else
+        "articles/" ++ slug ++ ".html"
 
 
 metadataDecoder : Decoder ArticleMetadata
