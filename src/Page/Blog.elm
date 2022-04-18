@@ -1,4 +1,4 @@
-module Page.Blog exposing (Data, Item, Model, Msg, articleToItem, page, viewArticleList)
+module Page.Blog exposing (Data, Item, LinkOrArticle(..), Model, Msg, articleToItem, page, viewArticleList)
 
 import Data.Article exposing (ArticleWithMetadata(..))
 import Data.Route
@@ -11,7 +11,7 @@ import Html.Attributes as HA
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
-import Route exposing (Route)
+import Route
 import Shared
 import Theme
 import View exposing (Body(..), View)
@@ -35,10 +35,15 @@ type alias Data =
 
 type alias Item =
     { priority : Int
-    , route : Route
+    , page : LinkOrArticle
     , tags : List Tag
     , title : String
     }
+
+
+type LinkOrArticle
+    = Link String
+    | Article { slug : String }
 
 
 page : Page RouteParams Data
@@ -71,28 +76,34 @@ viewArticleList list =
 
 viewLink : Item -> Html Msg
 viewLink item =
-    Route.toLink
-        (\attrs ->
-            let
-                tags =
-                    List.map Shared.viewTag item.tags
-                        |> List.intersperse (H.text ", ")
-                        |> H.div
-                            [ HA.style "display" "inline-block"
-                            , HA.style "font-size" "0.8rem"
-                            ]
-            in
-            H.div []
-                [ Theme.priorityBadge item.priority
-                , H.text " "
-                , H.a
-                    attrs
-                    [ H.text item.title ]
-                , H.text " - "
-                , tags
-                ]
-        )
-        item.route
+    let
+        link =
+            \attrs ->
+                let
+                    tags =
+                        List.map Shared.viewTag item.tags
+                            |> List.intersperse (H.text ", ")
+                            |> H.div
+                                [ HA.style "display" "inline-block"
+                                , HA.style "font-size" "0.8rem"
+                                ]
+                in
+                H.div []
+                    [ Theme.priorityBadge item.priority
+                    , H.text " "
+                    , H.a
+                        attrs
+                        [ H.text item.title ]
+                    , H.text " - "
+                    , tags
+                    ]
+    in
+    case item.page of
+        Article slug ->
+            Route.toLink link (Route.Slug_ slug)
+
+        Link url ->
+            link [ HA.href url ]
 
 
 data : DataSource Data
@@ -109,16 +120,16 @@ articleToItem article =
                 { title = metadata.title
                 , tags = metadata.tags
                 , priority = metadata.priority
-                , route = Route.Slug_ { slug = slug }
+                , page = Article { slug = slug }
                 }
 
-        ArticleLinkWithMetadata { slug, metadata } ->
+        ArticleLinkWithMetadata { url, metadata } ->
             Maybe.map2
                 (\title priority ->
                     { title = title
                     , tags = metadata.tags
                     , priority = priority
-                    , route = Route.Slug_ { slug = slug }
+                    , page = Link url
                     }
                 )
                 metadata.title

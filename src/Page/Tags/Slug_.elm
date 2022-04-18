@@ -5,6 +5,7 @@ import Data.Tag as Tag
 import DataSource exposing (DataSource)
 import Head
 import Head.Seo as Seo
+import List.Extra
 import Page exposing (Page, StaticPayload)
 import Page.Blog as Blog
 import Pages.PageUrl exposing (PageUrl)
@@ -55,16 +56,28 @@ data routeParams =
     Article.listWithMetadata
         |> DataSource.map
             (\articles ->
-                { tag = routeParams.slug
-                , articles =
-                    articles
-                        |> List.filterMap Blog.articleToItem
-                        |> List.filter
+                let
+                    filteredArticles =
+                        articles
+                            |> List.filterMap Blog.articleToItem
+                            |> List.filter
+                                (\{ tags } ->
+                                    List.any
+                                        (\tag -> Tag.toSlug tag == routeParams.slug)
+                                        tags
+                                )
+
+                    foundTag =
+                        List.Extra.findMap
                             (\{ tags } ->
-                                List.any
+                                List.Extra.find
                                     (\tag -> Tag.toSlug tag == routeParams.slug)
                                     tags
                             )
+                            filteredArticles
+                in
+                { tag = Maybe.withDefault routeParams.slug <| Maybe.map Tag.name foundTag
+                , articles = filteredArticles
                 }
             )
         |> DataSource.distillSerializeCodec ("tag-" ++ routeParams.slug) dataCodec
@@ -81,45 +94,33 @@ dataCodec =
 itemCodec : Codec () Blog.Item
 itemCodec =
     Codec.record
-        (\priority route tags title ->
+        (\priority page_ tags title ->
             { priority = priority
-            , route = route
+            , page = page_
             , tags = tags
             , title = title
             }
         )
         |> Codec.field .priority Codec.int
-        |> Codec.field .route routeCodec
+        |> Codec.field .page pageCodec
         |> Codec.field .tags Tag.listCodec
         |> Codec.field .title Codec.string
         |> Codec.finishRecord
 
 
-routeCodec : Codec () Route
-routeCodec =
+pageCodec : Codec () Blog.LinkOrArticle
+pageCodec =
     Codec.customType
-        (\ftag ftags farticle fblog findex value ->
+        (\farticle flink value ->
             case value of
-                Route.Tags__Slug_ { slug } ->
-                    ftag slug
-
-                Route.Tags ->
-                    ftags
-
-                Route.Slug_ { slug } ->
+                Blog.Article { slug } ->
                     farticle slug
 
-                Route.Blog ->
-                    fblog
-
-                Route.Index ->
-                    findex
+                Blog.Link url ->
+                    flink url
         )
-        |> Codec.variant1 (\slug -> Route.Tags__Slug_ { slug = slug }) Codec.string
-        |> Codec.variant0 Route.Tags
-        |> Codec.variant1 (\slug -> Route.Slug_ { slug = slug }) Codec.string
-        |> Codec.variant0 Route.Blog
-        |> Codec.variant0 Route.Index
+        |> Codec.variant1 (\slug -> Blog.Article { slug = slug }) Codec.string
+        |> Codec.variant1 Blog.Link Codec.string
         |> Codec.finishCustomType
 
 
