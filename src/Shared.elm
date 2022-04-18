@@ -114,7 +114,7 @@ view sharedData { route } _ _ pageView =
             |> Maybe.withDefault
                 (route
                     |> Maybe.andThen Data.Route.routeToLabel
-                    |> Maybe.withDefault "TODO"
+                    |> Maybe.withDefault "Incrium.com"
                 )
     }
 
@@ -163,15 +163,60 @@ viewToHtml pageView =
 
 markdownToHtml : String -> Result String (List (Html msg))
 markdownToHtml markdown =
-    markdown
-        |> Markdown.Parser.parse
-        |> Result.mapError (\_ -> "Markdown error.")
-        |> Result.andThen
-            (\blocks ->
-                Markdown.Renderer.render
-                    Markdown.Renderer.defaultHtmlRenderer
-                    blocks
-            )
+    let
+        go m =
+            m
+                |> Markdown.Parser.parse
+                |> Result.mapError (\_ -> "Markdown error.")
+                |> Result.andThen
+                    (\blocks ->
+                        Markdown.Renderer.render
+                            Markdown.Renderer.defaultHtmlRenderer
+                            blocks
+                    )
+
+        toMarkdownFallbackText m =
+            go m
+                |> Result.withDefault [ H.text m ]
+
+        smAttributeToRow attr =
+            let
+                trimmed =
+                    String.trim attr
+
+                cut =
+                    if String.startsWith "\\#" trimmed then
+                        String.dropLeft 2 trimmed
+
+                    else
+                        trimmed
+            in
+            case String.indexes ":" cut of
+                [] ->
+                    H.tr [] [ H.td [] [ H.text trimmed ] ]
+
+                colon :: _ ->
+                    H.tr []
+                        [ H.th [] [ H.text <| String.trim <| String.left colon cut ]
+                        , H.td [] <| toMarkdownFallbackText <| String.trim <| String.dropLeft (colon + 1) cut
+                        ]
+
+        smReferenceToTable tail =
+            tail
+                |> String.split "\n"
+                |> List.map smAttributeToRow
+                |> H.table [ HA.class "sm-table" ]
+    in
+    case String.split "**#SuperMemo Reference:****" markdown of
+        [ m, tail ] ->
+            go m
+                |> Result.map
+                    (\rendered ->
+                        rendered ++ [ smReferenceToTable tail ]
+                    )
+
+        _ ->
+            go markdown
 
 
 viewTag : Tag -> Html msg
