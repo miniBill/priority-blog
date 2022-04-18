@@ -194,14 +194,16 @@ parseRedirectsFile filename =
         |> DataSource.map
             (\raw ->
                 raw
-                    |> String.split "#"
+                    |> String.split "\n"
                     |> List.filterMap parseRedirectLine
             )
 
 
 parseRedirectLine : String -> Maybe Redirect
-parseRedirectLine =
-    Parser.run redirectLineParser >> Result.toMaybe
+parseRedirectLine line =
+    line
+        |> Parser.run redirectLineParser
+        |> Result.toMaybe
 
 
 redirectLineParser : Parser Redirect
@@ -274,8 +276,13 @@ metadataParser =
                                                     |> List.filterMap Tag.fromString
                                         }
 
+                                    "datePublished" ->
+                                        { acc | datePublished = timeFromString v }
+
+                                    "dateUpdated" ->
+                                        { acc | dateUpdated = timeFromString v }
+
                                     _ ->
-                                        -- TODO
                                         acc
                             )
                             empty
@@ -384,18 +391,28 @@ timeDecoder =
     Decode.string
         |> Decode.andThen
             (\raw ->
-                case Iso8601.toTime raw of
-                    Ok posix ->
-                        Decode.succeed <| Iso8601 posix
+                case timeFromString raw of
+                    Just t ->
+                        Decode.succeed t
 
-                    Err _ ->
-                        case List.map String.toInt <| String.split "/" (String.trim raw) of
-                            [ Just m, Just d, Just y ] ->
-                                Decode.succeed <| Date <| Date.fromCalendarDate y (Date.numberToMonth m) d
-
-                            _ ->
-                                Decode.fail "Invalid time"
+                    Nothing ->
+                        Decode.fail "Invalid time"
             )
+
+
+timeFromString : String -> Maybe ArticleTime
+timeFromString raw =
+    case Iso8601.toTime raw of
+        Ok posix ->
+            Just <| Iso8601 posix
+
+        Err _ ->
+            case List.map String.toInt <| String.split "/" (String.trim raw) of
+                [ Just m, Just d, Just y ] ->
+                    Just <| Date <| Date.fromCalendarDate y (Date.numberToMonth m) d
+
+                _ ->
+                    Nothing
 
 
 tagsDecoder : Decoder (List Tag)

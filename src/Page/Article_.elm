@@ -40,12 +40,16 @@ page =
     Page.prerender
         { head = head
         , data = data
-        , routes =
-            DataSource.map
-                (List.map getRouteParams)
-                Article.list
+        , routes = routes
         }
         |> Page.buildNoState { view = view }
+
+
+routes : DataSource (List RouteParams)
+routes =
+    DataSource.map
+        (List.map getRouteParams)
+        Article.list
 
 
 getRouteParams : Article -> RouteParams
