@@ -1,5 +1,6 @@
-module Data.Tag exposing (Tag, fromString, name, toSlug)
+module Data.Tag exposing (Tag, fromString, listCodec, name, toSlug)
 
+import Serialize as Codec exposing (Codec)
 import Slug exposing (Slug)
 
 
@@ -21,3 +22,11 @@ toSlug (Tag _ slug) =
 name : Tag -> String
 name (Tag n _) =
     n
+
+
+listCodec : Codec () (List Tag)
+listCodec =
+    Codec.map
+        (List.filterMap fromString)
+        (List.map name)
+        (Codec.list Codec.string)

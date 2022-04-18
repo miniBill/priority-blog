@@ -1,4 +1,4 @@
-module Data.Article exposing (ArticleMetadata, ArticleTime(..), ArticleWithMetadata, LightArticle(..), codec, list, listWithMetadata, metadataDecoder, slugToFilePath, tags)
+module Data.Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..), Redirect, articleFileToFilePath, codec, list, listWithMetadata, metadataDecoder, tags)
 
 import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
@@ -6,15 +6,31 @@ import DataSource.File
 import DataSource.Glob as Glob
 import Date
 import Iso8601
-import List.Extra as List
+import List.Extra
 import OptimizedDecoder as Decode exposing (Decoder)
+import Parser exposing ((|.), (|=), Parser)
+import Route exposing (Route(..))
 import Serialize as Codec exposing (Codec)
 import Time
 
 
-type alias ArticleWithMetadata =
+type Article
+    = ArticleFile { slug : String, isMarkdown : Bool }
+    | ArticleLink { slug : String, file : String }
+
+
+type ArticleWithMetadata
+    = ArticleFileWithMetadata
+        { slug : String
+        , metadata : ArticleMetadata
+        }
+    | ArticleLinkWithMetadata Redirect
+
+
+type alias Redirect =
     { slug : String
-    , metadata : ArticleMetadata
+    , url : String
+    , metadata : LinkMetadata
     }
 
 
@@ -27,6 +43,15 @@ type alias ArticleMetadata =
     }
 
 
+type alias LinkMetadata =
+    { title : Maybe String
+    , tags : List Tag
+    , priority : Maybe Int
+    , datePublished : Maybe ArticleTime
+    , dateUpdated : Maybe ArticleTime
+    }
+
+
 type ArticleTime
     = Iso8601 Time.Posix
     | Date Date.Date
@@ -34,29 +59,58 @@ type ArticleTime
 
 codec : Codec () ArticleWithMetadata
 codec =
-    Codec.record ArticleWithMetadata
-        |> Codec.field .slug Codec.string
-        |> Codec.field .metadata metadataCodec
-        |> Codec.finishRecord
+    Codec.customType
+        (\farticle flink value ->
+            case value of
+                ArticleFileWithMetadata m ->
+                    farticle m
+
+                ArticleLinkWithMetadata m ->
+                    flink m
+        )
+        |> Codec.variant1 ArticleFileWithMetadata
+            (Codec.record
+                (\slug metadata -> { slug = slug, metadata = metadata })
+                |> Codec.field .slug Codec.string
+                |> Codec.field .metadata articleMetadataCodec
+                |> Codec.finishRecord
+            )
+        |> Codec.variant1 ArticleLinkWithMetadata
+            (Codec.record
+                (\slug url metadata ->
+                    { slug = slug
+                    , url = url
+                    , metadata = metadata
+                    }
+                )
+                |> Codec.field .slug Codec.string
+                |> Codec.field .url Codec.string
+                |> Codec.field .metadata linkMetadataCodec
+                |> Codec.finishRecord
+            )
+        |> Codec.finishCustomType
 
 
-metadataCodec : Codec () ArticleMetadata
-metadataCodec =
+articleMetadataCodec : Codec () ArticleMetadata
+articleMetadataCodec =
     Codec.record ArticleMetadata
         |> Codec.field .title Codec.string
-        |> Codec.field .tags tagListCodec
+        |> Codec.field .tags Tag.listCodec
         |> Codec.field .priority Codec.int
         |> Codec.field .datePublished (Codec.maybe articleTimeCodec)
         |> Codec.field .dateUpdated (Codec.maybe articleTimeCodec)
         |> Codec.finishRecord
 
 
-tagListCodec : Codec () (List Tag)
-tagListCodec =
-    Codec.map
-        (List.filterMap Tag.fromString)
-        (List.map Tag.name)
-        (Codec.list Codec.string)
+linkMetadataCodec : Codec () LinkMetadata
+linkMetadataCodec =
+    Codec.record LinkMetadata
+        |> Codec.field .title (Codec.maybe Codec.string)
+        |> Codec.field .tags Tag.listCodec
+        |> Codec.field .priority (Codec.maybe Codec.int)
+        |> Codec.field .datePublished (Codec.maybe articleTimeCodec)
+        |> Codec.field .dateUpdated (Codec.maybe articleTimeCodec)
+        |> Codec.finishRecord
 
 
 articleTimeCodec : Codec () ArticleTime
@@ -85,49 +139,149 @@ dateCodec =
     Codec.map Date.fromRataDie Date.toRataDie Codec.int
 
 
-type LightArticle
-    = ArticleHtml { slug : String }
-    | ArticleMarkdown { slug : String }
-    | ArticleLink { slugs : List String }
-
-
-list : DataSource (List LightArticle)
+list : DataSource (List Article)
 list =
     let
         markdowns =
-            Glob.succeed (\slug -> ArticleMarkdown { slug = slug })
+            Glob.succeed (\slug -> ArticleFile { slug = slug, isMarkdown = True })
                 |> Glob.match (Glob.literal "articles/")
                 |> Glob.capture Glob.wildcard
                 |> Glob.match (Glob.literal ".md")
                 |> Glob.toDataSource
 
         htmls =
-            Glob.succeed (\slug -> ArticleHtml { slug = slug })
+            Glob.succeed (\slug -> ArticleFile { slug = slug, isMarkdown = False })
                 |> Glob.match (Glob.literal "articles/")
                 |> Glob.capture Glob.wildcard
                 |> Glob.match (Glob.literal ".html")
                 |> Glob.toDataSource
 
         links =
-            Glob.succeed
-                (\slug ->
-                    ArticleLink
-                        { slugs =
-                            let
-                                _ =
-                                    Debug.todo
-                            in
-                            [ slug ]
-                        }
-                )
+            Glob.succeed (\filename -> filename)
                 |> Glob.match (Glob.literal "redirects/")
                 |> Glob.capture Glob.wildcard
                 |> Glob.toDataSource
+                |> DataSource.andThen
+                    (\filenames ->
+                        filenames
+                            |> List.map
+                                (\filename ->
+                                    filename
+                                        |> parseRedirectsFile
+                                        |> DataSource.map
+                                            (List.map
+                                                (\{ slug } ->
+                                                    ArticleLink
+                                                        { slug = slug
+                                                        , file = filename
+                                                        }
+                                                )
+                                            )
+                                )
+                            |> DataSource.combine
+                            |> DataSource.map List.concat
+                    )
     in
     DataSource.map3 (\m h l -> m ++ h ++ l)
         markdowns
         htmls
         links
+
+
+parseRedirectsFile : String -> DataSource (List Redirect)
+parseRedirectsFile filename =
+    DataSource.File.rawFile ("redirects/" ++ filename)
+        |> DataSource.map
+            (\raw ->
+                raw
+                    |> String.split "#"
+                    |> List.filterMap parseRedirectLine
+            )
+
+
+parseRedirectLine : String -> Maybe Redirect
+parseRedirectLine =
+    Parser.run redirectLineParser >> Result.toMaybe
+
+
+redirectLineParser : Parser Redirect
+redirectLineParser =
+    Parser.succeed
+        (\slug url metadata ->
+            { slug = String.trim slug
+            , url = String.trim url
+            , metadata = metadata
+            }
+        )
+        |= Parser.getChompedString (Parser.chompUntil ":")
+        |. Parser.symbol ":"
+        |. Parser.spaces
+        |= Parser.getChompedString (Parser.chompUntilEndOr " ")
+        |. Parser.spaces
+        |= metadataParser
+
+
+metadataParser : Parser LinkMetadata
+metadataParser =
+    let
+        empty =
+            { title = Nothing
+            , tags = []
+            , datePublished = Nothing
+            , dateUpdated = Nothing
+            , priority = Nothing
+            }
+
+        attributeParser =
+            Parser.succeed (\k v -> ( String.trim k, String.trim v ))
+                |= Parser.getChompedString
+                    (Parser.chompUntil ":")
+                |. Parser.symbol ":"
+                |= Parser.getChompedString
+                    (Parser.chompWhile (\c -> c /= ';' && c /= ']'))
+    in
+    Parser.oneOf
+        [ Parser.sequence
+            { start = "["
+            , end = "]"
+            , separator = ";"
+            , spaces = Parser.spaces
+            , trailing = Parser.Optional
+            , item = attributeParser
+            }
+            |> Parser.map
+                (\attrs ->
+                    attrs
+                        |> List.foldl
+                            (\( k, v ) acc ->
+                                case k of
+                                    "priority" ->
+                                        case String.toInt v of
+                                            Just p ->
+                                                { acc | priority = Just p }
+
+                                            Nothing ->
+                                                acc
+
+                                    "title" ->
+                                        { acc | title = Just v }
+
+                                    "tags" ->
+                                        { acc
+                                            | tags =
+                                                v
+                                                    |> String.split " "
+                                                    |> List.filterMap Tag.fromString
+                                        }
+
+                                    _ ->
+                                        -- TODO
+                                        acc
+                            )
+                            empty
+                )
+        , Parser.succeed empty
+        ]
 
 
 listWithMetadata : DataSource (List ArticleWithMetadata)
@@ -138,7 +292,6 @@ listWithMetadata =
                 articles
                     |> List.map fetchMetadata
                     |> DataSource.combine
-                    |> DataSource.map List.concat
             )
         |> (-- FIXME
             if False then
@@ -149,37 +302,30 @@ listWithMetadata =
            )
 
 
-fetchMetadata : LightArticle -> DataSource (List ArticleWithMetadata)
+fetchMetadata : Article -> DataSource ArticleWithMetadata
 fetchMetadata article =
     case article of
-        ArticleHtml { slug } ->
-            slugToFilePath slug
+        ArticleLink { slug, file } ->
+            parseRedirectsFile file
+                |> DataSource.andThen
+                    (\redirects ->
+                        redirects
+                            |> List.Extra.find (\redirect -> redirect.slug == slug)
+                            |> Maybe.map
+                                (\redirect -> DataSource.succeed <| ArticleLinkWithMetadata redirect)
+                            |> Maybe.withDefault (DataSource.fail "Redirect not found")
+                    )
+
+        ArticleFile articleFile ->
+            articleFileToFilePath articleFile
                 |> DataSource.andThen (.path >> DataSource.File.onlyFrontmatter metadataDecoder)
                 |> DataSource.map
                     (\metadata ->
-                        [ { slug = slug
-                          , metadata = metadata
-                          }
-                        ]
+                        ArticleFileWithMetadata
+                            { slug = articleFile.slug
+                            , metadata = metadata
+                            }
                     )
-
-        ArticleMarkdown { slug } ->
-            slugToFilePath slug
-                |> DataSource.andThen (.path >> DataSource.File.onlyFrontmatter metadataDecoder)
-                |> DataSource.map
-                    (\metadata ->
-                        [ { slug = slug
-                          , metadata = metadata
-                          }
-                        ]
-                    )
-
-        ArticleLink slugs ->
-            let
-                _ =
-                    Debug.todo
-            in
-            DataSource.succeed []
 
 
 tags : DataSource (List ( Tag, Int ))
@@ -188,8 +334,16 @@ tags =
         |> DataSource.map
             (\articles ->
                 articles
-                    |> List.concatMap (.metadata >> .tags)
-                    |> List.gatherEqualsBy Tag.toSlug
+                    |> List.concatMap
+                        (\article ->
+                            case article of
+                                ArticleFileWithMetadata { metadata } ->
+                                    metadata.tags
+
+                                ArticleLinkWithMetadata { metadata } ->
+                                    metadata.tags
+                        )
+                    |> List.Extra.gatherEqualsBy Tag.toSlug
                     |> List.map (\( tag, copies ) -> ( tag, 1 + List.length copies ))
             )
         |> (-- FIXME
@@ -200,8 +354,8 @@ tags =
            )
 
 
-slugToFilePath : String -> DataSource { path : String, isMarkdown : Bool }
-slugToFilePath slug =
+articleFileToFilePath : { a | slug : String } -> DataSource { path : String, isMarkdown : Bool }
+articleFileToFilePath { slug } =
     let
         mdPath =
             "articles/" ++ slug ++ ".md"

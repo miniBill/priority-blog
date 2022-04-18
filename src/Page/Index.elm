@@ -1,6 +1,6 @@
 module Page.Index exposing (Data, Model, Msg, page)
 
-import Data.Article exposing (ArticleTime(..), ArticleWithMetadata)
+import Data.Article exposing (ArticleTime(..), ArticleWithMetadata(..))
 import DataSource exposing (DataSource)
 import Date
 import DateFormat
@@ -9,6 +9,7 @@ import Head.Seo as Seo
 import Html as H exposing (Html)
 import Html.Attributes as HA
 import Page exposing (Page, StaticPayload)
+import Page.Blog as Blog
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
 import Route
@@ -39,21 +40,36 @@ page =
 
 
 type alias Data =
-    List ( ArticleTime, ArticleWithMetadata )
+    List ( ArticleTime, Blog.Item )
 
 
 data : DataSource Data
 data =
     Data.Article.listWithMetadata
         |> DataSource.map
-            (List.filterMap (\({ metadata } as article) -> Maybe.map (\datePublished -> ( datePublished, article )) metadata.datePublished)
+            (List.filterMap
+                (\article ->
+                    Maybe.map2 Tuple.pair
+                        (getDatePublished article)
+                        (Blog.articleToItem article)
+                )
                 >> List.sortBy tupleToOrder
                 >> List.take articlesInHomepage
             )
 
 
-tupleToOrder : ( ArticleTime, ArticleWithMetadata ) -> ( Int, Int )
-tupleToOrder ( datePublished, article ) =
+getDatePublished : ArticleWithMetadata -> Maybe ArticleTime
+getDatePublished article =
+    case article of
+        ArticleFileWithMetadata { metadata } ->
+            metadata.datePublished
+
+        ArticleLinkWithMetadata { metadata } ->
+            metadata.datePublished
+
+
+tupleToOrder : ( ArticleTime, Blog.Item ) -> ( Int, Int )
+tupleToOrder ( datePublished, item ) =
     ( negate <|
         -- TODO: Make this more sensibe
         case datePublished of
@@ -62,7 +78,7 @@ tupleToOrder ( datePublished, article ) =
 
             Date d ->
                 Date.toRataDie d
-    , article.metadata.priority
+    , item.priority
     )
 
 
@@ -107,8 +123,8 @@ view _ sharedModel static =
     }
 
 
-viewArticle : Shared.Model -> (( ArticleTime, ArticleWithMetadata ) -> Html Msg)
-viewArticle sharedModel ( datePublished, { slug, metadata } ) =
+viewArticle : Shared.Model -> (( ArticleTime, Blog.Item ) -> Html Msg)
+viewArticle sharedModel ( datePublished, { slug, title } ) =
     let
         inner attrs =
             H.a
@@ -118,7 +134,7 @@ viewArticle sharedModel ( datePublished, { slug, metadata } ) =
                        ]
                 )
                 [ H.li []
-                    [ H.h2 [] [ H.text metadata.title ]
+                    [ H.h2 [] [ H.text title ]
                     , H.text "Published: "
                     , H.b []
                         [ H.text <|

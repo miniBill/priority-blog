@@ -1,7 +1,8 @@
-module Page.Blog exposing (Data, Model, Msg, page, viewArticleList)
+module Page.Blog exposing (Data, Item, Model, Msg, articleToItem, page, viewArticleList)
 
-import Data.Article exposing (ArticleWithMetadata)
+import Data.Article exposing (ArticleWithMetadata(..))
 import Data.Route
+import Data.Tag exposing (Tag)
 import DataSource exposing (DataSource)
 import Head
 import Head.Seo as Seo
@@ -29,7 +30,15 @@ type alias RouteParams =
 
 
 type alias Data =
-    List ArticleWithMetadata
+    List Item
+
+
+type alias Item =
+    { priority : Int
+    , slug : String
+    , tags : List Tag
+    , title : String
+    }
 
 
 page : Page RouteParams Data
@@ -52,22 +61,22 @@ view _ _ static =
     }
 
 
-viewArticleList : List ArticleWithMetadata -> Body Msg
+viewArticleList : List Item -> Body Msg
 viewArticleList list =
     list
-        |> List.sortBy (\{ metadata } -> metadata.priority)
+        |> List.sortBy .priority
         |> List.map viewLink
         |> HtmlBody
 
 
-viewLink : ArticleWithMetadata -> Html Msg
-viewLink article =
-    Route.Slug_ { slug = article.slug }
+viewLink : Item -> Html Msg
+viewLink item =
+    Route.Slug_ { slug = item.slug }
         |> Route.toLink
             (\attrs ->
                 let
                     tags =
-                        List.map Shared.viewTag article.metadata.tags
+                        List.map Shared.viewTag item.tags
                             |> List.intersperse (H.text ", ")
                             |> H.div
                                 [ HA.style "display" "inline-block"
@@ -75,11 +84,11 @@ viewLink article =
                                 ]
                 in
                 H.div []
-                    [ Theme.priorityBadge article.metadata.priority
+                    [ Theme.priorityBadge item.priority
                     , H.text " "
                     , H.a
                         attrs
-                        [ H.text article.metadata.title ]
+                        [ H.text item.title ]
                     , H.text " - "
                     , tags
                     ]
@@ -89,6 +98,31 @@ viewLink article =
 data : DataSource Data
 data =
     Data.Article.listWithMetadata
+        |> DataSource.map (List.filterMap articleToItem)
+
+
+articleToItem : ArticleWithMetadata -> Maybe Item
+articleToItem article =
+    case article of
+        ArticleFileWithMetadata { slug, metadata } ->
+            Just
+                { title = metadata.title
+                , tags = metadata.tags
+                , priority = metadata.priority
+                , slug = slug
+                }
+
+        ArticleLinkWithMetadata { slug, metadata } ->
+            Maybe.map2
+                (\title priority ->
+                    { title = title
+                    , tags = metadata.tags
+                    , priority = priority
+                    , slug = slug
+                    }
+                )
+                metadata.title
+                metadata.priority
 
 
 head :

@@ -1,12 +1,12 @@
 module Page.Tags.Slug_ exposing (Data, Model, Msg, page)
 
-import Data.Article as Article exposing (ArticleWithMetadata)
+import Data.Article as Article
 import Data.Tag as Tag
 import DataSource exposing (DataSource)
 import Head
 import Head.Seo as Seo
 import Page exposing (Page, StaticPayload)
-import Page.Blog
+import Page.Blog as Blog
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
 import Serialize as Codec exposing (Codec)
@@ -28,7 +28,7 @@ type alias RouteParams =
 
 type alias Data =
     { tag : String
-    , articles : List ArticleWithMetadata
+    , articles : List Blog.Item
     }
 
 
@@ -57,11 +57,12 @@ data routeParams =
                 { tag = routeParams.slug
                 , articles =
                     articles
+                        |> List.filterMap Blog.articleToItem
                         |> List.filter
-                            (\{ metadata } ->
+                            (\{ tags } ->
                                 List.any
                                     (\tag -> Tag.toSlug tag == routeParams.slug)
-                                    metadata.tags
+                                    tags
                             )
                 }
             )
@@ -72,7 +73,24 @@ dataCodec : Codec () Data
 dataCodec =
     Codec.record Data
         |> Codec.field .tag Codec.string
-        |> Codec.field .articles (Codec.list Article.codec)
+        |> Codec.field .articles (Codec.list itemCodec)
+        |> Codec.finishRecord
+
+
+itemCodec : Codec () Blog.Item
+itemCodec =
+    Codec.record
+        (\priority slug tags title ->
+            { priority = priority
+            , slug = slug
+            , tags = tags
+            , title = title
+            }
+        )
+        |> Codec.field .priority Codec.int
+        |> Codec.field .slug Codec.string
+        |> Codec.field .tags Tag.listCodec
+        |> Codec.field .title Codec.string
         |> Codec.finishRecord
 
 
@@ -103,5 +121,5 @@ view :
     -> View Msg
 view _ _ static =
     { title = Just <| "Tag: " ++ static.data.tag
-    , body = Page.Blog.viewArticleList static.data.articles
+    , body = Blog.viewArticleList static.data.articles
     }
