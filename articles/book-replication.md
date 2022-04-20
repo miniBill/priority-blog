@@ -20,3 +20,7 @@ Tesler's Law:
 ### https://github.com/dwmkerr/hacker-laws#the-law-of-conservation-of-complexity-teslers-law
 
 Books don't do a great job of taking complexity off the reader; this leads to most books not being useful for readers below some threshold of conscientousness. It would be interesting to see what percentage of readers actually achieve goal writer has for a book after reading it. 
+
+*related to 1 hose/2 hose post: https://www.lesswrong.com/posts/MMAK6eeMCH3JGuqeZ/everything-i-need-to-know-about-takeoff-speeds-i-learned*
+
+usually people use reviews as a proxy for goodness; atomic habits is 4.4/5 on goodreads. I don't think it's impacted my life at a 4.4 level. I wish there were a way to see ratings of how effective people found books. 
