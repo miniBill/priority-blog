@@ -23,4 +23,4 @@ Books don't do a great job of taking complexity off the reader; this leads to mo
 
 *related to 1 hose/2 hose post: https://www.lesswrong.com/posts/MMAK6eeMCH3JGuqeZ/everything-i-need-to-know-about-takeoff-speeds-i-learned*
 
-usually people use reviews as a proxy for goodness; atomic habits is 4.4/5 on goodreads. I don't think it's impacted my life at a 4.4 level. I wish there were a way to see ratings of how effective people found books. 
+usually people use reviews as a proxy for goodness; atomic habits is 4.4/5 on goodreads. I don't think it's impacted my life at a 4.4 level. I wish there were a way to see ratings of how effective people found books.
