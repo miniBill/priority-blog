@@ -3,8 +3,7 @@ title: How could you filter through (most) human knowledge? (a vague idea)
 tags: Recommendation Networks, Learning, Fun
 priority: 30
 date-published: 5/9/2020
-date-updated:4/21/2022
-
+date-updated: 4/21/2022
 ---
 
 

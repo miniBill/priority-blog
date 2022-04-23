@@ -4,6 +4,7 @@ tags: Principles
 priority: 20
 date-published: 4/15/2022
 date-updated:
+
 ---
 
 *At some point I want to create an implementation of this. Dalio likely already has something for this but it's not clear to me that there's any decent publicly usable implementation.* 
