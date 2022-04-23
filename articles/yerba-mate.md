@@ -1,5 +1,5 @@
 ---
-title: **Why drink yerba mate and other caffeinated beverages?**
+title: Why drink yerba mate and other caffeinated beverages?
 tags: Fun, Sleep, Health
 priority: 65
 date-published: 4/23/2022
