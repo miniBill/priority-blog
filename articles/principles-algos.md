@@ -6,7 +6,7 @@ date-published: 4/15/2022
 date-updated:
 ---
 
-At some point I want to create an implementation of this. Dalio likely already has something for this but it's not clear to me that there's any decent publicly usable implementation. 
+*At some point I want to create an implementation of this. Dalio likely already has something for this but it's not clear to me that there's any decent publicly usable implementation.* 
 
 **5.11 Convert your principles into algorithms and have the computer make decisions alongside you.**
 
