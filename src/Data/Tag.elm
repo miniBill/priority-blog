@@ -10,8 +10,12 @@ type Tag
 
 fromString : String -> Maybe Tag
 fromString rawName =
-    Slug.generate rawName
-        |> Maybe.map (Tag rawName)
+    let
+        trimmed =
+            String.trim rawName
+    in
+    Slug.generate trimmed
+        |> Maybe.map (Tag trimmed)
 
 
 toSlug : Tag -> String

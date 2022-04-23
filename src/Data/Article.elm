@@ -277,7 +277,7 @@ metadataParser =
                                         { acc
                                             | tags =
                                                 v
-                                                    |> String.split " "
+                                                    |> String.split ","
                                                     |> List.filterMap Tag.fromString
                                         }
 
@@ -422,5 +422,5 @@ timeFromString raw =
 
 tagsDecoder : Decoder (List Tag)
 tagsDecoder =
-    Decode.map (String.split " " >> List.filterMap Tag.fromString)
+    Decode.map (String.split "," >> List.filterMap Tag.fromString)
         Decode.string
