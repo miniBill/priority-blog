@@ -4,9 +4,6 @@ tags: Reading, Empiricism
 priority: 80
 date-published: 4/20/2022
 date-updated:
-
-
-
 ---
 
 

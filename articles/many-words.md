@@ -4,7 +4,6 @@ tags: books, reading, empiricism
 priority: 90
 date-published: 4/23/2022
 date-updated:
-
 ---
 
 
