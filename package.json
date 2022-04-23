@@ -2,7 +2,8 @@
   "name": "elm-pages-app",
   "scripts": {
     "start": "elm-pages dev",
-    "build": "elm-pages build"
+    "build": "elm-pages build",
+    "build-debug": "elm-pages build --debug"
   },
   "devDependencies": {
     "elm": "^0.19.1-5",
