@@ -3,7 +3,7 @@ module Theme exposing (layout, priorityBadge)
 import Color exposing (Color)
 import Data.Route
 import Data.Tag as Tag exposing (Tag)
-import Html as H exposing (Attribute, Html)
+import Html as H exposing (Html)
 import Html.Attributes as HA
 import Route exposing (Route)
 import View exposing (View)
@@ -15,28 +15,25 @@ layout tags view body =
         title =
             case view.title of
                 Just t ->
-                    H.h1 [ HA.style "display" "inline-block" ] [ H.text t ]
+                    H.h1 [] [ H.text t ]
 
                 Nothing ->
                     H.text ""
     in
-    row [ padding ]
+    H.main_ []
         [ sidebar tags
-        , H.article
-            [ HA.style "margin-left" rythm
-            , HA.style "width" "100%"
-            , HA.style "max-width" "640px"
-            ]
-            (title :: body)
+        , H.article [] (title :: body)
         ]
 
 
 sidebar : { tags : List ( Tag, Int ) } -> Html msg
 sidebar tags =
     H.nav []
-        [ routeLink Route.Index
-        , routeLink Route.Blog
-        , routeLink Route.Tags
+        [ H.div [ HA.id "main-links" ]
+            [ routeLink Route.Index
+            , routeLink Route.Blog
+            , routeLink Route.Tags
+            ]
         , tagCloud tags
         ]
 
@@ -96,43 +93,17 @@ tagCloud { tags } =
     tags
         |> List.sortBy (Tuple.second >> negate)
         |> List.map toLink
-        |> List.intersperse (H.text " ")
-        |> H.div []
+        |> H.div [ HA.id "tag-cloud" ]
 
 
 routeLink : Route -> Html msg
 routeLink route =
-    let
-        toSidebarLink name attrs =
-            H.div [] [ H.text "∘ ", H.a attrs [ H.text name ] ]
-    in
-    Data.Route.routeToLabel route
-        |> Maybe.map
-            (\label ->
-                Route.toLink
-                    (toSidebarLink label)
-                    route
-            )
-        |> Maybe.withDefault (H.text "")
+    case Data.Route.routeToLabel route of
+        Just label ->
+            Route.toLink H.a route [ H.text label ]
 
-
-padding : Attribute msg
-padding =
-    HA.style "padding" rythm
-
-
-rythm : String
-rythm =
-    ".5rem"
-
-
-row : List (Attribute msg) -> List (Html msg) -> Html msg
-row attrs children =
-    H.div
-        (HA.style "display" "flex"
-            :: attrs
-        )
-        children
+        Nothing ->
+            H.text ""
 
 
 priorityBadge : Int -> Html msg

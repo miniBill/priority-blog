@@ -1,3 +1,13 @@
+/* Variables */
+
+:root {
+  --rythm: 0.5rem;
+  --nav-width: 240px;
+  --article-width: 640px;
+}
+
+/* Reset */
+
 html {
   box-sizing: border-box;
   font-size: 16px;
@@ -33,15 +43,71 @@ img {
   height: auto;
 }
 
+/* Layout */
+
+main {
+  padding: var(--rythm);
+  display: flex;
+  gap: var(--rythm);
+}
+
+article {
+  width: 100%;
+  flex-grow: 5;
+}
+
 article > * + * {
-  margin-top: 0.5rem;
+  margin-top: var(--rythm);
 }
 
 nav {
   display: flex;
   flex-direction: column;
+  gap: var(--rythm);
+  flex-grow: 1;
 }
 
-nav > * + * {
-  margin-top: 0.5rem;
+nav > #main-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rythm);
+}
+
+nav > #tag-cloud {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: calc(0.4 * var(--rythm));
+}
+
+@media screen and (max-width: 640px) {
+  main {
+    flex-direction: column;
+  }
+
+  nav > #main-links {
+    flex-direction: row;
+  }
+}
+
+@media screen and (min-width: 641px) {
+  main {
+    flex-direction: row;
+  }
+
+  article {
+    margin: auto;
+    max-width: var(--article-width);
+  }
+
+  nav > #main-links {
+    flex-direction: column;
+  }
+}
+
+@media screen and (min-width: 1024px) {
+  nav {
+    position: absolute;
+    max-width: calc(50vw - 0.5 * var(--article-width) - 2 * var(--rythm));
+  }
 }
