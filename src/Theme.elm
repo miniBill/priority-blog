@@ -33,7 +33,7 @@ layout tags view body =
 
 sidebar : { tags : List ( Tag, Int ) } -> Html msg
 sidebar tags =
-    H.aside [ HA.class "spaced" ]
+    H.nav []
         [ routeLink Route.Index
         , routeLink Route.Blog
         , routeLink Route.Tags

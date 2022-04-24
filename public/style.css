@@ -33,15 +33,15 @@ img {
   height: auto;
 }
 
-.spaced > * + * {
-  margin-top: 0.5rem;
-}
-
 article > * + * {
   margin-top: 0.5rem;
 }
 
-aside {
+nav {
   display: flex;
   flex-direction: column;
+}
+
+nav > * + * {
+  margin-top: 0.5rem;
 }
