@@ -1,4 +1,4 @@
-module Page.Index exposing (Data, Model, Msg, page)
+module Page.Index exposing (Data, Model, Msg, RouteParams, page)
 
 import Data.Article exposing (ArticleTime(..), ArticleWithMetadata(..))
 import DataSource exposing (DataSource)

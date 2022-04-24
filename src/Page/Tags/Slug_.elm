@@ -1,4 +1,4 @@
-module Page.Tags.Slug_ exposing (Data, Model, Msg, page)
+module Page.Tags.Slug_ exposing (Data, Model, Msg, RouteParams, page)
 
 import Data.Article as Article
 import Data.Tag as Tag
@@ -10,7 +10,6 @@ import Page exposing (Page, StaticPayload)
 import Page.Blog as Blog
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
-import Route exposing (Route(..))
 import Serialize as Codec exposing (Codec)
 import Shared
 import View exposing (View)

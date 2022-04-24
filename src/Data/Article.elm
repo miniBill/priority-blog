@@ -1,4 +1,4 @@
-module Data.Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..), Redirect, articleMetadataCodec, codec, fetchRedirectMetadata, getArticlePath, list, listWithMetadata, metadataDecoder, tags)
+module Data.Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..), LinkMetadata, Redirect, articleMetadataCodec, fetchRedirectMetadata, getArticlePath, list, listWithMetadata, metadataDecoder, tags)
 
 import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
@@ -9,7 +9,6 @@ import Iso8601
 import List.Extra
 import OptimizedDecoder as Decode exposing (Decoder)
 import Parser exposing ((|.), (|=), Parser)
-import Route exposing (Route(..))
 import Serialize as Codec exposing (Codec)
 import Time
 

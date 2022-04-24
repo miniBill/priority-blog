@@ -1,6 +1,6 @@
-module Page.Article_ exposing (Data, Model, Msg, page)
+module Page.Article_ exposing (Data, Model, Msg, RouteParams, page)
 
-import Data.Article as Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..))
+import Data.Article as Article exposing (Article(..), ArticleMetadata, ArticleTime(..))
 import Data.Tag as Tag
 import DataSource exposing (DataSource)
 import DataSource.File
@@ -17,12 +17,12 @@ import Shared
 import View exposing (ArticleData, Body(..), View)
 
 
-type alias Model =
-    ()
-
-
 type alias Msg =
     Never
+
+
+type alias Model =
+    ()
 
 
 type alias RouteParams =

@@ -1,4 +1,4 @@
-module Page.Tags exposing (Data, Model, Msg, page)
+module Page.Tags exposing (Data, Model, Msg, RouteParams, page)
 
 import Data.Article as Article
 import Data.Route as Route

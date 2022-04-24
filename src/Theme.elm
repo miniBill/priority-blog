@@ -1,4 +1,4 @@
-module Theme exposing (column, layout, priorityBadge, row)
+module Theme exposing (layout, priorityBadge)
 
 import Color exposing (Color)
 import Data.Route
@@ -33,7 +33,7 @@ layout tags view body =
 
 sidebar : { tags : List ( Tag, Int ) } -> Html msg
 sidebar tags =
-    column [ HA.class "spaced" ]
+    H.aside [ HA.class "spaced" ]
         [ routeLink Route.Index
         , routeLink Route.Blog
         , routeLink Route.Tags
@@ -124,16 +124,6 @@ padding =
 rythm : String
 rythm =
     ".5rem"
-
-
-column : List (Attribute msg) -> List (Html msg) -> Html msg
-column attrs children =
-    H.div
-        (HA.style "display" "flex"
-            :: HA.style "flex-direction" "column"
-            :: attrs
-        )
-        children
 
 
 row : List (Attribute msg) -> List (Html msg) -> Html msg

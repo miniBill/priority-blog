@@ -1,4 +1,4 @@
-module Page.Blog exposing (Data, Item, LinkOrArticle(..), Model, Msg, articleToItem, page, viewArticleList)
+module Page.Blog exposing (Data, Item, LinkOrArticle(..), Model, Msg, RouteParams, articleToItem, page, viewArticleList)
 
 import Data.Article exposing (ArticleWithMetadata(..))
 import Data.Route
