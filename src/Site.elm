@@ -50,7 +50,7 @@ manifest _ =
         iconSmall =
             { src = Pages.Url.fromPath <| Path.fromString "android-chrome-192x192.png"
             , sizes = [ ( 192, 192 ) ]
-            , purposes = []
+            , purposes = [ Manifest.IconPurposeAny, Manifest.IconPurposeMaskable ]
             , mimeType = Just MimeType.Png
             }
 
@@ -58,7 +58,7 @@ manifest _ =
         iconBig =
             { src = Pages.Url.fromPath <| Path.fromString "android-chrome-512x512.png"
             , sizes = [ ( 512, 512 ) ]
-            , purposes = []
+            , purposes = [ Manifest.IconPurposeAny, Manifest.IconPurposeMaskable ]
             , mimeType = Just MimeType.Png
             }
     in
