@@ -114,7 +114,7 @@ viewLink item =
                         [ main ]
 
                     Just src ->
-                        [ main, H.img [ HA.src src, HA.style "width" "15vw" ] [] ]
+                        [ main, H.img [ HA.src src, HA.style "width" "150px" ] [] ]
                 )
     in
     case item.page of
