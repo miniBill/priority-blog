@@ -11,7 +11,6 @@ import List.Extra
 import OptimizedDecoder as Decode
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
-import Pages.Url
 import Serialize as Codec exposing (Codec)
 import Shared
 import Site

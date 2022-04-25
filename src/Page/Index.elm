@@ -9,7 +9,6 @@ import Html as H exposing (Html)
 import Html.Attributes as HA
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
-import Pages.Url
 import Route
 import Shared
 import Site

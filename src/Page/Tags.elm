@@ -9,7 +9,6 @@ import Head.Seo as Seo
 import Html as H
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
-import Route exposing (Route(..))
 import Shared exposing (viewTag)
 import Site exposing (logo)
 import View exposing (Body(..), View)

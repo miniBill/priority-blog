@@ -5,7 +5,7 @@ import Data.Route
 import Data.Tag as Tag exposing (Tag)
 import Html as H exposing (Html)
 import Html.Attributes as HA
-import Route exposing (Route)
+import Route
 import View exposing (View)
 
 
