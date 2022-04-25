@@ -110,12 +110,13 @@ view :
 view sharedData { route } _ _ pageView =
     { body = viewToHtml sharedData pageView
     , title =
-        pageView.title
-            |> Maybe.withDefault
-                (route
-                    |> Maybe.andThen Data.Route.routeToLabel
-                    |> Maybe.withDefault "Incrium.com"
-                )
+        if String.isEmpty pageView.title then
+            route
+                |> Maybe.andThen Data.Route.routeToLabel
+                |> Maybe.withDefault "Incrium.com"
+
+        else
+            pageView.title
     }
 
 

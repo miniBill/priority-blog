@@ -1,4 +1,4 @@
-module Data.Route exposing (routeToLabel)
+module Data.Route exposing (routeLabels, routeToLabel)
 
 import Route exposing (Route(..))
 
@@ -7,16 +7,28 @@ routeToLabel : Route -> Maybe String
 routeToLabel route =
     case route of
         Index ->
-            Just "Homepage"
+            Just routeLabels.index
 
-        Blog ->
-            Just "Blog index (by priority)"
+        BlogByDate ->
+            Just "Blog (by date)"
 
         Article_ _ ->
             Nothing
 
         Tags ->
-            Just "All tags"
+            Just routeLabels.tags
 
         Tags__Slug_ { slug } ->
-            Just <| "Tag: " ++ slug
+            Just <| routeLabels.tag slug
+
+
+routeLabels :
+    { index : String
+    , tags : String
+    , tag : String -> String
+    }
+routeLabels =
+    { index = "Homepage"
+    , tags = "All tags"
+    , tag = \slug -> "Tag: " ++ slug
+    }

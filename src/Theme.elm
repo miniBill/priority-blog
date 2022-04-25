@@ -13,12 +13,11 @@ layout : { tags : List ( Tag, Int ) } -> View msg -> List (Html msg) -> Html msg
 layout tags view body =
     let
         title =
-            case view.title of
-                Just t ->
-                    H.h1 [] [ H.text t ]
+            if String.isEmpty view.title then
+                H.text ""
 
-                Nothing ->
-                    H.text ""
+            else
+                H.h1 [] [ H.text view.title ]
     in
     H.main_ []
         [ sidebar tags
@@ -31,7 +30,6 @@ sidebar tags =
     H.nav []
         [ H.div [ HA.id "main-links" ]
             [ routeLink Route.Index
-            , routeLink Route.Blog
             , routeLink Route.Tags
             ]
         , tagCloud tags

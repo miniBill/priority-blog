@@ -1,20 +1,18 @@
-module Page.Index exposing (Data, Model, Msg, RouteParams, page)
+module Page.Index exposing (Data, Item, LinkOrArticle(..), Model, Msg, RouteParams, articleToItem, page, viewArticleList)
 
-import Data.Article exposing (ArticleTime(..), ArticleWithMetadata(..))
+import Data.Article exposing (ArticleWithMetadata(..))
+import Data.Tag exposing (Tag)
 import DataSource exposing (DataSource)
-import Date
-import DateFormat
 import Head
 import Head.Seo as Seo
 import Html as H exposing (Html)
 import Html.Attributes as HA
 import Page exposing (Page, StaticPayload)
-import Page.Blog as Blog
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
 import Route
 import Shared
-import Time
+import Theme
 import View exposing (Body(..), View)
 
 
@@ -30,6 +28,23 @@ type alias RouteParams =
     {}
 
 
+type alias Data =
+    List Item
+
+
+type alias Item =
+    { priority : Int
+    , page : LinkOrArticle
+    , tags : List Tag
+    , title : String
+    }
+
+
+type LinkOrArticle
+    = Link String
+    | Article { article : String }
+
+
 page : Page RouteParams Data
 page =
     Page.single
@@ -39,52 +54,85 @@ page =
         |> Page.buildNoState { view = view }
 
 
-type alias Data =
-    List ( ArticleTime, Blog.Item )
+view :
+    Maybe PageUrl
+    -> Shared.Model
+    -> StaticPayload Data RouteParams
+    -> View Msg
+view _ _ static =
+    { title = ""
+    , body = viewArticleList static.data
+    }
+
+
+viewArticleList : List Item -> Body Msg
+viewArticleList list =
+    list
+        |> List.sortBy .priority
+        |> List.map viewLink
+        |> HtmlBody
+
+
+viewLink : Item -> Html Msg
+viewLink item =
+    let
+        link =
+            \attrs ->
+                let
+                    tags =
+                        List.map Shared.viewTag item.tags
+                            |> List.intersperse (H.text ", ")
+                            |> H.div
+                                [ HA.style "display" "inline-block"
+                                , HA.style "font-size" "0.8rem"
+                                ]
+                in
+                H.div []
+                    [ Theme.priorityBadge item.priority
+                    , H.text " "
+                    , H.a
+                        attrs
+                        [ H.text item.title ]
+                    , H.text " - "
+                    , tags
+                    ]
+    in
+    case item.page of
+        Article slug ->
+            Route.toLink link (Route.Article_ slug)
+
+        Link url ->
+            link [ HA.href url ]
 
 
 data : DataSource Data
 data =
     Data.Article.listWithMetadata
-        |> DataSource.map
-            (List.filterMap
-                (\article ->
-                    Maybe.map2 Tuple.pair
-                        (getDatePublished article)
-                        (Blog.articleToItem article)
-                )
-                >> List.sortBy tupleToOrder
-                >> List.take articlesInHomepage
-            )
+        |> DataSource.map (List.filterMap articleToItem)
 
 
-getDatePublished : ArticleWithMetadata -> Maybe ArticleTime
-getDatePublished article =
+articleToItem : ArticleWithMetadata -> Maybe Item
+articleToItem article =
     case article of
-        ArticleFileWithMetadata { metadata } ->
-            metadata.datePublished
+        ArticleFileWithMetadata { slug, metadata } ->
+            Just
+                { title = metadata.title
+                , tags = metadata.tags
+                , priority = metadata.priority
+                , page = Article { article = slug }
+                }
 
-        ArticleLinkWithMetadata { metadata } ->
-            metadata.datePublished
-
-
-tupleToOrder : ( ArticleTime, Blog.Item ) -> ( Int, Int )
-tupleToOrder ( datePublished, item ) =
-    ( negate <|
-        -- TODO: Make this more sensibe
-        case datePublished of
-            Iso8601 p ->
-                Date.toRataDie <| Date.fromPosix Time.utc p
-
-            Date d ->
-                Date.toRataDie d
-    , item.priority
-    )
-
-
-articlesInHomepage : Int
-articlesInHomepage =
-    5
+        ArticleLinkWithMetadata { url, metadata } ->
+            Maybe.map2
+                (\title priority ->
+                    { title = title
+                    , tags = metadata.tags
+                    , priority = priority
+                    , page = Link url
+                    }
+                )
+                metadata.title
+                metadata.priority
 
 
 head :
@@ -102,70 +150,6 @@ head _ =
             }
         , description = "TODO"
         , locale = Nothing
-        , title = "TODO"
+        , title = "Blog index"
         }
         |> Seo.website
-
-
-view :
-    Maybe PageUrl
-    -> Shared.Model
-    -> StaticPayload Data RouteParams
-    -> View Msg
-view _ sharedModel static =
-    { title = Nothing
-    , body =
-        static.data
-            |> List.map (viewArticle sharedModel)
-            |> List.intersperse separator
-            |> H.ul [ HA.style "width" "100%" ]
-            |> (\l -> HtmlBody [ l ])
-    }
-
-
-viewArticle : Shared.Model -> (( ArticleTime, Blog.Item ) -> Html Msg)
-viewArticle sharedModel ( datePublished, item ) =
-    let
-        inner attrs =
-            H.a
-                (attrs
-                    ++ [ HA.style "text-decoration" "none"
-                       , HA.style "color" "black"
-                       ]
-                )
-                [ H.li []
-                    [ H.h2 [] [ H.text item.title ]
-                    , H.text "Published: "
-                    , H.b []
-                        [ H.text <|
-                            case datePublished of
-                                Iso8601 iso ->
-                                    DateFormat.format
-                                        [ DateFormat.monthNameAbbreviated
-                                        , DateFormat.text " "
-                                        , DateFormat.dayOfMonthSuffix
-                                        , DateFormat.text ", "
-                                        , DateFormat.yearNumber
-                                        ]
-                                        (Maybe.withDefault Time.utc sharedModel.here)
-                                        iso
-
-                                Date d ->
-                                    Date.format "MMM ddd, y" d
-                        ]
-                    ]
-                ]
-    in
-    case item.page of
-        Blog.Article slug ->
-            Route.toLink inner (Route.Article_ slug)
-
-        Blog.Link url ->
-            inner [ HA.href url ]
-
-
-separator : Html Msg
-separator =
-    H.li [ HA.style "width" "100%" ]
-        [ H.hr [ HA.style "width" "100%" ] []
-        ]

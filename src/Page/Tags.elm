@@ -60,7 +60,7 @@ head _ =
             }
         , description = "TODO"
         , locale = Nothing
-        , title = Maybe.withDefault "All tags" <| Route.routeToLabel Tags
+        , title = Route.routeLabels.tags
         }
         |> Seo.website
 
@@ -71,7 +71,7 @@ view :
     -> StaticPayload Data RouteParams
     -> View Msg
 view _ _ static =
-    { title = Route.routeToLabel Tags
+    { title = Route.routeLabels.tags
     , body =
         static.data
             |> List.sortBy (Tuple.first >> Tag.toSlug)

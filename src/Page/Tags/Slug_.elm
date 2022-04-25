@@ -1,13 +1,14 @@
 module Page.Tags.Slug_ exposing (Data, Model, Msg, RouteParams, page)
 
 import Data.Article as Article
+import Data.Route as Route
 import Data.Tag as Tag
 import DataSource exposing (DataSource)
 import Head
 import Head.Seo as Seo
 import List.Extra
 import Page exposing (Page, StaticPayload)
-import Page.Blog as Blog
+import Page.Index as Blog
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
 import Serialize as Codec exposing (Codec)
@@ -149,6 +150,6 @@ view :
     -> StaticPayload Data RouteParams
     -> View Msg
 view _ _ static =
-    { title = Just <| "Tag: " ++ static.data.tag
+    { title = Route.routeLabels.tag static.data.tag
     , body = Blog.viewArticleList static.data.articles
     }

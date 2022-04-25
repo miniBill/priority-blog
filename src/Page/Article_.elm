@@ -193,11 +193,11 @@ view :
 view _ _ static =
     case static.data of
         HtmlBody body ->
-            { title = Just <| body.metadata.title ++ " (" ++ String.fromInt body.metadata.priority ++ ")"
+            { title = body.metadata.title ++ " (" ++ String.fromInt body.metadata.priority ++ ")"
             , body = ArticleBody body
             }
 
         Redirect url ->
-            { title = Just <| "Redirecting to " ++ url
+            { title = "Redirecting to " ++ url
             , body = RedirectBody url
             }

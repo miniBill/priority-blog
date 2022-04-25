@@ -19,7 +19,7 @@ type alias ArticleData =
 
 
 type alias View msg =
-    { title : Maybe String
+    { title : String
     , body : Body msg
     }
 
@@ -45,6 +45,6 @@ map fn doc =
 
 placeholder : String -> View msg
 placeholder moduleName =
-    { title = Nothing
+    { title = ""
     , body = HtmlBody [ H.text moduleName ]
     }
