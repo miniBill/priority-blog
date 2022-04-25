@@ -124,16 +124,24 @@ viewToHtml : Data -> View msg -> Html msg
 viewToHtml sharedData pageView =
     case pageView.body of
         ArticleBody article ->
+            let
+                tagsHtml =
+                    if List.isEmpty article.metadata.tags then
+                        []
+
+                    else
+                        [ article.metadata.tags
+                            |> List.map viewTag
+                            |> List.intersperse (H.text ", ")
+                            |> (::) (H.text "Tags: ")
+                            |> H.div []
+                        ]
+            in
             Theme.layout sharedData pageView <|
                 if article.isMarkdown then
                     case markdownToHtml article.content of
                         Ok content ->
-                            content
-                                ++ [ H.div [] <|
-                                        H.text "Tags: "
-                                            :: List.intersperse (H.text ", ")
-                                                (List.map viewTag article.metadata.tags)
-                                   ]
+                            content ++ tagsHtml
 
                         Err e ->
                             [ H.text e ]
@@ -141,12 +149,7 @@ viewToHtml sharedData pageView =
                 else
                     case Html.Parser.run article.content of
                         Ok content ->
-                            Html.Parser.Util.toVirtualDom content
-                                ++ [ H.div [] <|
-                                        H.text "Tags: "
-                                            :: List.intersperse (H.text ", ")
-                                                (List.map viewTag article.metadata.tags)
-                                   ]
+                            Html.Parser.Util.toVirtualDom content ++ tagsHtml
 
                         Err _ ->
                             [ H.text "Error parsing HTML" ]

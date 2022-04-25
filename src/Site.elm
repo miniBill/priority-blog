@@ -71,17 +71,12 @@ manifest _ =
         |> Manifest.withDisplayMode Manifest.Standalone
 
 
-svgMime : MimeType.MimeImage
-svgMime =
-    MimeType.OtherImage "svg+xml"
-
-
 logo : Seo.Image
 logo =
     { url = Pages.Url.fromPath <| Path.fromString "android-chrome-512x512.png"
     , alt = "Incrium's logo"
     , dimensions = Just { width = 600, height = 600 }
-    , mimeType = Just <| MimeType.toString <| MimeType.Image svgMime
+    , mimeType = Just <| MimeType.toString <| MimeType.Image MimeType.Png
     }
 
 

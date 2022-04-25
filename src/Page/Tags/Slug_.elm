@@ -113,13 +113,21 @@ pageCodec =
     Codec.customType
         (\farticle flink value ->
             case value of
-                Blog.Article { article } ->
-                    farticle article
+                Blog.Article { slug, description } ->
+                    farticle slug description
 
                 Blog.Link url ->
                     flink url
         )
-        |> Codec.variant1 (\article -> Blog.Article { article = article }) Codec.string
+        |> Codec.variant2
+            (\slug description ->
+                Blog.Article
+                    { slug = slug
+                    , description = description
+                    }
+            )
+            Codec.string
+            (Codec.maybe Codec.string)
         |> Codec.variant1 Blog.Link Codec.string
         |> Codec.finishCustomType
 

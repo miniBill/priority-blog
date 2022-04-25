@@ -1,15 +1,19 @@
-module Data.Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..), LinkMetadata, Redirect, articleMetadataCodec, fetchRedirectMetadata, getArticlePath, list, listWithMetadata, metadataDecoder, tags)
+module Data.Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..), LinkMetadata, Redirect, articleMetadataCodec, codec, fetchArticleMetadata, fetchRedirectMetadata, getArticlePath, list, listWithMetadata, tags)
 
 import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
 import DataSource.File
 import DataSource.Glob as Glob
 import Date
+import Head.Seo as Seo
 import Iso8601
 import List.Extra
-import OptimizedDecoder as Decode exposing (Decoder)
+import Markdown.Block as Block
+import Markdown.Parser
+import Markdown.Renderer
 import Parser exposing ((|.), (|=), Parser)
 import Serialize as Codec exposing (Codec)
+import String.Extra
 import Time
 
 
@@ -35,6 +39,8 @@ type alias Redirect =
 
 type alias ArticleMetadata =
     { title : String
+    , description : Maybe String
+    , image : Maybe String
     , tags : List Tag
     , priority : Int
     , datePublished : Maybe ArticleTime
@@ -94,6 +100,8 @@ articleMetadataCodec : Codec () ArticleMetadata
 articleMetadataCodec =
     Codec.record ArticleMetadata
         |> Codec.field .title Codec.string
+        |> Codec.field .description (Codec.maybe Codec.string)
+        |> Codec.field .image (Codec.maybe Codec.string)
         |> Codec.field .tags Tag.listCodec
         |> Codec.field .priority Codec.int
         |> Codec.field .datePublished (Codec.maybe articleTimeCodec)
@@ -281,10 +289,10 @@ metadataParser =
                                         }
 
                                     "datePublished" ->
-                                        { acc | datePublished = timeFromString v }
+                                        { acc | datePublished = timeParser v }
 
                                     "dateUpdated" ->
-                                        { acc | dateUpdated = timeFromString v }
+                                        { acc | dateUpdated = timeParser v }
 
                                     _ ->
                                         acc
@@ -304,13 +312,6 @@ listWithMetadata =
                     |> List.map fetchMetadata
                     |> DataSource.combine
             )
-        |> (-- FIXME
-            if False then
-                DataSource.distillSerializeCodec "articles" (Codec.list codec)
-
-            else
-                identity
-           )
 
 
 fetchMetadata : Article -> DataSource ArticleWithMetadata
@@ -321,15 +322,173 @@ fetchMetadata article =
                 |> DataSource.map ArticleLinkWithMetadata
 
         ArticleFile articleFile ->
-            getArticlePath articleFile
-                |> DataSource.File.onlyFrontmatter metadataDecoder
+            fetchArticleMetadata articleFile
                 |> DataSource.map
-                    (\metadata ->
+                    (\( metadata, _ ) ->
                         ArticleFileWithMetadata
                             { slug = articleFile.slug
                             , metadata = metadata
                             }
                     )
+
+
+fetchArticleMetadata : { slug : String, isMarkdown : Bool } -> DataSource ( ArticleMetadata, String )
+fetchArticleMetadata articleFile =
+    let
+        path =
+            getArticlePath articleFile
+    in
+    path
+        |> DataSource.File.rawFile
+        |> DataSource.andThen
+            (\file ->
+                case String.split "---" file of
+                    before :: between :: after ->
+                        case String.trim before of
+                            "" ->
+                                case parseMetadata between of
+                                    Err e ->
+                                        DataSource.fail <| path ++ ": error parsing metadata - " ++ e
+
+                                    Ok metadata ->
+                                        let
+                                            rebuilt =
+                                                String.join "---" after
+
+                                            parsed =
+                                                Markdown.Parser.parse rebuilt
+                                                    |> Result.withDefault []
+
+                                            filledMetadata =
+                                                if articleFile.isMarkdown then
+                                                    { metadata
+                                                        | description = markdownToDescription parsed
+                                                        , image = markdownToImage parsed
+                                                    }
+
+                                                else
+                                                    metadata
+                                        in
+                                        ( filledMetadata
+                                        , rebuilt
+                                        )
+                                            |> DataSource.succeed
+
+                            nonempty ->
+                                DataSource.fail <| path ++ ": expected nothing before the first '---', but instead I found " ++ nonempty
+
+                    _ ->
+                        DataSource.fail <| path ++ ": Missing header"
+            )
+
+
+parseMetadata : String -> Result String ArticleMetadata
+parseMetadata header =
+    header
+        |> String.split "\n"
+        |> List.foldl (\line -> Result.andThen (parseLine line))
+            (Ok
+                { title = Nothing
+                , description = Nothing
+                , image = Nothing
+                , tags = []
+                , priority = Nothing
+                , datePublished = Nothing
+                , dateUpdated = Nothing
+                }
+            )
+        |> Result.andThen
+            (\found ->
+                case ( found.title, found.priority ) of
+                    ( Nothing, _ ) ->
+                        Err "Missing title"
+
+                    ( _, Nothing ) ->
+                        Err "Missing priotity"
+
+                    ( Just title, Just priority ) ->
+                        Ok
+                            { title = title
+                            , description = found.description
+                            , image = found.image
+                            , tags = found.tags
+                            , priority = priority
+                            , datePublished = found.datePublished
+                            , dateUpdated = found.dateUpdated
+                            }
+            )
+
+
+type alias ParsingMetadata =
+    { title : Maybe String
+    , description : Maybe String
+    , image : Maybe String
+    , tags : List Tag
+    , priority : Maybe Int
+    , datePublished : Maybe ArticleTime
+    , dateUpdated : Maybe ArticleTime
+    }
+
+
+parseLine : String -> ParsingMetadata -> Result String ParsingMetadata
+parseLine line acc =
+    let
+        cleaned =
+            String.Extra.clean line
+    in
+    if String.isEmpty cleaned then
+        Ok acc
+
+    else
+        case String.indexes ":" cleaned of
+            splitAt :: _ ->
+                let
+                    before =
+                        String.trim <| String.left splitAt cleaned
+
+                    after =
+                        String.trim <| String.dropLeft (splitAt + 1) cleaned
+                in
+                if String.isEmpty after then
+                    Ok acc
+
+                else
+                    case before of
+                        "title" ->
+                            Ok { acc | title = Just after }
+
+                        "tags" ->
+                            Ok { acc | tags = parseTags after }
+
+                        "priority" ->
+                            case String.toInt after of
+                                Just priority ->
+                                    Ok { acc | priority = Just priority }
+
+                                Nothing ->
+                                    Err "Error parsing priority as an integer"
+
+                        "date-published" ->
+                            case timeParser after of
+                                Just time ->
+                                    Ok { acc | datePublished = Just time }
+
+                                Nothing ->
+                                    Err "Error parsing date-published"
+
+                        "date-updated" ->
+                            case timeParser after of
+                                Just time ->
+                                    Ok { acc | dateUpdated = Just time }
+
+                                Nothing ->
+                                    Err "Error parsing date-updated"
+
+                        unexpected ->
+                            Err <| "Unexpected property in header: " ++ unexpected
+
+            [] ->
+                Err <| "Unexpected line in header: " ++ cleaned
 
 
 fetchRedirectMetadata : { file : String, slug : String } -> DataSource { slug : String, url : String, metadata : LinkMetadata }
@@ -380,32 +539,8 @@ getArticlePath { slug, isMarkdown } =
         "articles/" ++ slug ++ ".html"
 
 
-metadataDecoder : Decoder ArticleMetadata
-metadataDecoder =
-    Decode.succeed ArticleMetadata
-        |> Decode.andMap (Decode.field "title" Decode.string)
-        |> Decode.andMap (Decode.field "tags" tagsDecoder)
-        |> Decode.andMap (Decode.field "priority" Decode.int)
-        |> Decode.andMap (Decode.maybe <| Decode.field "date-published" timeDecoder)
-        |> Decode.andMap (Decode.maybe <| Decode.field "date-updated" timeDecoder)
-
-
-timeDecoder : Decoder ArticleTime
-timeDecoder =
-    Decode.string
-        |> Decode.andThen
-            (\raw ->
-                case timeFromString raw of
-                    Just t ->
-                        Decode.succeed t
-
-                    Nothing ->
-                        Decode.fail "Invalid time"
-            )
-
-
-timeFromString : String -> Maybe ArticleTime
-timeFromString raw =
+timeParser : String -> Maybe ArticleTime
+timeParser raw =
     case Iso8601.toTime raw of
         Ok posix ->
             Just <| Iso8601 posix
@@ -419,7 +554,65 @@ timeFromString raw =
                     Nothing
 
 
-tagsDecoder : Decoder (List Tag)
-tagsDecoder =
-    Decode.map (String.split "," >> List.filterMap Tag.fromString)
-        Decode.string
+parseTags : String -> List Tag
+parseTags input =
+    input
+        |> String.split ","
+        |> List.filterMap Tag.fromString
+
+
+
+-- Extractors --
+
+
+markdownToDescription : List Block.Block -> Maybe String
+markdownToDescription blocks =
+    let
+        go budget bs =
+            if budget < 0 then
+                ""
+
+            else
+                case bs of
+                    [] ->
+                        ""
+
+                    (Block.Paragraph inlines) :: t ->
+                        let
+                            extracted =
+                                String.Extra.clean <| Block.extractInlineText inlines
+                        in
+                        if String.isEmpty extracted then
+                            go budget t
+
+                        else
+                            extracted ++ " " ++ go (budget - 1 - String.length extracted) t
+
+                    _ :: t ->
+                        go budget t
+
+        raw =
+            go 200 blocks
+    in
+    if String.isEmpty raw then
+        Nothing
+
+    else
+        Just (String.Extra.softEllipsis 200 raw)
+
+
+markdownToImage : List Block.Block -> Maybe String
+markdownToImage =
+    let
+        go blocks =
+            case blocks of
+                [] ->
+                    Nothing
+
+                (Block.Paragraph inlines) :: t ->
+                    go t
+
+                _ :: t ->
+                    go t
+    in
+    go

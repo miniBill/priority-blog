@@ -3,14 +3,14 @@ module Page.Article_ exposing (Data, Model, Msg, RouteParams, page)
 import Data.Article as Article exposing (Article(..), ArticleMetadata, ArticleTime(..))
 import Data.Tag as Tag
 import DataSource exposing (DataSource)
-import DataSource.File
 import Head
 import Head.Seo as Seo
 import Iso8601
 import List.Extra
-import OptimizedDecoder as Decode
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
+import Pages.Url
+import Path
 import Serialize as Codec exposing (Codec)
 import Shared
 import Site
@@ -31,8 +31,8 @@ type alias RouteParams =
 
 
 type Data
-    = HtmlBody ArticleData
-    | Redirect String
+    = DataArticle ArticleData
+    | DataRedirect String
 
 
 page : Page RouteParams Data
@@ -78,27 +78,19 @@ data params =
                     Just article ->
                         case article of
                             ArticleFile f ->
-                                let
-                                    path =
-                                        Article.getArticlePath f
-                                in
-                                DataSource.File.bodyWithFrontmatter
-                                    (\content ->
-                                        Decode.map
-                                            (\metadata ->
-                                                HtmlBody
-                                                    { content = content
-                                                    , isMarkdown = f.isMarkdown
-                                                    , metadata = metadata
-                                                    }
-                                            )
-                                            Article.metadataDecoder
-                                    )
-                                    path
+                                Article.fetchArticleMetadata f
+                                    |> DataSource.map
+                                        (\( metadata, content ) ->
+                                            DataArticle
+                                                { content = content
+                                                , isMarkdown = f.isMarkdown
+                                                , metadata = metadata
+                                                }
+                                        )
 
                             ArticleLink redirect ->
                                 Article.fetchRedirectMetadata redirect
-                                    |> DataSource.map (\{ url } -> Redirect url)
+                                    |> DataSource.map (\{ url } -> DataRedirect url)
             )
         |> DataSource.distillSerializeCodec ("article-" ++ params.article) codec
 
@@ -108,14 +100,14 @@ codec =
     Codec.customType
         (\fhtml fredirect value ->
             case value of
-                HtmlBody h ->
+                DataArticle h ->
                     fhtml h
 
-                Redirect r ->
+                DataRedirect r ->
                     fredirect r
         )
-        |> Codec.variant1 HtmlBody htmlBodyCodec
-        |> Codec.variant1 Redirect Codec.string
+        |> Codec.variant1 DataArticle htmlBodyCodec
+        |> Codec.variant1 DataRedirect Codec.string
         |> Codec.finishCustomType
 
 
@@ -145,14 +137,22 @@ head :
     -> List Head.Tag
 head static =
     case static.data of
-        HtmlBody { metadata } ->
+        DataArticle { metadata } ->
             Seo.summary
                 { canonicalUrlOverride = Nothing
                 , siteName = "Incrium"
                 , image =
-                    extractImage static
-                        |> Maybe.withDefault Site.logo
-                , description = ""
+                    case metadata.image of
+                        Just imageUrl ->
+                            { url = Pages.Url.fromPath <| Path.fromString imageUrl
+                            , alt = "Picture for the article " ++ metadata.title
+                            , dimensions = Nothing
+                            , mimeType = Nothing
+                            }
+
+                        Nothing ->
+                            Site.logo
+                , description = Maybe.withDefault "" metadata.description
                 , locale = Just "en"
                 , title = metadata.title
                 }
@@ -164,14 +164,8 @@ head static =
                     , section = Nothing
                     }
 
-        Redirect url ->
+        DataRedirect url ->
             [ Head.metaRedirect <| Head.raw <| "0; url=" ++ url ]
-
-
-extractImage : StaticPayload Data RouteParams -> Maybe Seo.Image
-extractImage _ =
-    -- TODO
-    Nothing
 
 
 toSeoTime : ArticleTime -> Maybe String
@@ -191,12 +185,12 @@ view :
     -> View Msg
 view _ _ static =
     case static.data of
-        HtmlBody body ->
+        DataArticle body ->
             { title = body.metadata.title ++ " (" ++ String.fromInt body.metadata.priority ++ ") - " ++ Site.name
             , body = ArticleBody body
             }
 
-        Redirect url ->
+        DataRedirect url ->
             { title = "Redirecting to " ++ url
             , body = RedirectBody url
             }

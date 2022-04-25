@@ -42,7 +42,7 @@ type alias Item =
 
 type LinkOrArticle
     = Link String
-    | Article { article : String }
+    | Article { slug : String, description : Maybe String }
 
 
 page : Page RouteParams Data
@@ -76,39 +76,50 @@ viewArticleList list =
 viewLink : Item -> Html Msg
 viewLink item =
     let
-        link =
-            \attrs ->
-                let
-                    tags =
-                        List.map Shared.viewTag item.tags
-                            |> List.intersperse (H.text ", ")
-                            |> H.div
-                                [ HA.style "display" "inline-block"
-                                , HA.style "font-size" "0.8rem"
+        link description attrs =
+            let
+                tags =
+                    List.map Shared.viewTag item.tags
+                        |> List.intersperse (H.text ", ")
+                        |> H.div
+                            [ HA.style "display" "inline-block"
+                            , HA.style "font-size" "0.8rem"
+                            ]
+            in
+            H.div []
+                ([ Theme.priorityBadge item.priority
+                 , H.text " "
+                 , H.a
+                    attrs
+                    [ H.text item.title ]
+                 , H.text " - "
+                 , tags
+                 ]
+                    ++ (case description of
+                            Nothing ->
+                                []
+
+                            Just d ->
+                                [ H.br [] []
+                                , H.text d
                                 ]
-                in
-                H.div []
-                    [ Theme.priorityBadge item.priority
-                    , H.text " "
-                    , H.a
-                        attrs
-                        [ H.text item.title ]
-                    , H.text " - "
-                    , tags
-                    ]
+                       )
+                )
     in
     case item.page of
-        Article slug ->
-            Route.toLink link (Route.Article_ slug)
+        Article { slug, description } ->
+            Route.toLink (link description) (Route.Article_ { article = slug })
 
         Link url ->
-            link [ HA.href url ]
+            link Nothing [ HA.href url ]
 
 
 data : DataSource Data
 data =
     Data.Article.listWithMetadata
         |> DataSource.map (List.filterMap articleToItem)
+        -- TODO: distill
+        |> identity
 
 
 articleToItem : ArticleWithMetadata -> Maybe Item
@@ -119,7 +130,7 @@ articleToItem article =
                 { title = metadata.title
                 , tags = metadata.tags
                 , priority = metadata.priority
-                , page = Article { article = slug }
+                , page = Article { slug = slug, description = metadata.description }
                 }
 
         ArticleLinkWithMetadata { url, metadata } ->
