@@ -79,7 +79,7 @@ nav > section {
   align-items: baseline;
 }
 
-@media screen and (max-width: 640px) {
+@media not screen, screen and (max-width: 640px) {
   nav {
     flex-direction: row;
   }
