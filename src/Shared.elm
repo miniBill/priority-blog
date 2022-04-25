@@ -1,7 +1,7 @@
 module Shared exposing (Data, Model, Msg(..), SharedMsg(..), template, viewTag)
 
 import Browser.Navigation
-import Data.Article
+import Data.Article as Article
 import Data.Route
 import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
@@ -43,8 +43,7 @@ type Msg
 
 
 type alias Data =
-    { tags : List ( Tag, Int )
-    }
+    List ( Tag, Int )
 
 
 type SharedMsg
@@ -93,8 +92,7 @@ subscriptions _ _ =
 
 data : DataSource Data
 data =
-    Data.Article.tags
-        |> DataSource.map (\tags -> { tags = tags })
+    Article.tags
 
 
 view :
@@ -137,7 +135,7 @@ viewToHtml sharedData pageView =
                             |> H.div []
                         ]
             in
-            Theme.layout sharedData pageView <|
+            Theme.layout { tags = sharedData } pageView <|
                 if article.isMarkdown then
                     case markdownToHtml article.content of
                         Ok content ->
@@ -155,7 +153,7 @@ viewToHtml sharedData pageView =
                             [ H.text "Error parsing HTML" ]
 
         HtmlBody tags ->
-            Theme.layout sharedData pageView tags
+            Theme.layout { tags = sharedData } pageView tags
 
         RedirectBody url ->
             H.span []

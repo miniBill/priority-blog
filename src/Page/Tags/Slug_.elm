@@ -102,34 +102,10 @@ itemCodec =
             }
         )
         |> Codec.field .priority Codec.int
-        |> Codec.field .page pageCodec
+        |> Codec.field .page Blog.linkOrArticleCodec
         |> Codec.field .tags Tag.listCodec
         |> Codec.field .title Codec.string
         |> Codec.finishRecord
-
-
-pageCodec : Codec () Blog.LinkOrArticle
-pageCodec =
-    Codec.customType
-        (\farticle flink value ->
-            case value of
-                Blog.Article { slug, description } ->
-                    farticle slug description
-
-                Blog.Link url ->
-                    flink url
-        )
-        |> Codec.variant2
-            (\slug description ->
-                Blog.Article
-                    { slug = slug
-                    , description = description
-                    }
-            )
-            Codec.string
-            (Codec.maybe Codec.string)
-        |> Codec.variant1 Blog.Link Codec.string
-        |> Codec.finishCustomType
 
 
 head :

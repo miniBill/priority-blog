@@ -5,12 +5,10 @@ import DataSource exposing (DataSource)
 import DataSource.File
 import DataSource.Glob as Glob
 import Date
-import Head.Seo as Seo
 import Iso8601
 import List.Extra
 import Markdown.Block as Block
 import Markdown.Parser
-import Markdown.Renderer
 import Parser exposing ((|.), (|=), Parser)
 import Serialize as Codec exposing (Codec)
 import String.Extra
@@ -522,12 +520,18 @@ tags =
                     |> List.Extra.gatherEqualsBy Tag.toSlug
                     |> List.map (\( tag, copies ) -> ( tag, 1 + List.length copies ))
             )
-        |> (-- FIXME
-            -- if False then
-            --     DataSource.distillSerializeCodec "tags" (Codec.list <| Codec.tuple Codec.string Codec.int)
-            -- else
-            identity
-           )
+        |> DataSource.distillSerializeCodec "tags" tagsCodec
+
+
+tagsCodec : Codec () (List ( Tag, Int ))
+tagsCodec =
+    Codec.record
+        (\tgs counts ->
+            List.map2 Tuple.pair tgs counts
+        )
+        |> Codec.field (List.map Tuple.first) Tag.listCodec
+        |> Codec.field (List.map Tuple.second) (Codec.list Codec.int)
+        |> Codec.finishRecord
 
 
 getArticlePath : { slug : String, isMarkdown : Bool } -> String
@@ -603,16 +607,25 @@ markdownToDescription blocks =
 
 markdownToImage : List Block.Block -> Maybe String
 markdownToImage =
-    let
-        go blocks =
-            case blocks of
-                [] ->
+    List.Extra.findMap
+        (\block ->
+            case block of
+                Block.Paragraph inlines ->
+                    inlinesToImage inlines
+
+                _ ->
                     Nothing
+        )
 
-                (Block.Paragraph inlines) :: t ->
-                    go t
 
-                _ :: t ->
-                    go t
-    in
-    go
+inlinesToImage : List Block.Inline -> Maybe String
+inlinesToImage =
+    List.Extra.findMap
+        (\inline ->
+            case inline of
+                Block.Image url _ _ ->
+                    Just url
+
+                _ ->
+                    Nothing
+        )

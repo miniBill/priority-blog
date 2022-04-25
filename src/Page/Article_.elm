@@ -144,7 +144,12 @@ head static =
                 , image =
                     case metadata.image of
                         Just imageUrl ->
-                            { url = Pages.Url.fromPath <| Path.fromString imageUrl
+                            { url =
+                                if String.startsWith "http" imageUrl then
+                                    Pages.Url.external imageUrl
+
+                                else
+                                    Pages.Url.fromPath <| Path.fromString imageUrl
                             , alt = "Picture for the article " ++ metadata.title
                             , dimensions = Nothing
                             , mimeType = Nothing

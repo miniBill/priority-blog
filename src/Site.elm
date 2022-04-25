@@ -1,6 +1,6 @@
 module Site exposing (Data, config, description, logo, name)
 
-import DataSource
+import DataSource exposing (DataSource)
 import Head
 import Head.Seo as Seo
 import LanguageTag
@@ -26,7 +26,7 @@ config =
     }
 
 
-data : DataSource.DataSource Data
+data : DataSource Data
 data =
     DataSource.succeed ()
 
