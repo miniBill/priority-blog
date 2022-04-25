@@ -27,13 +27,18 @@ layout tags view body =
 
 sidebar : { tags : List ( Tag, Int ) } -> Html msg
 sidebar tags =
-    H.nav []
-        [ H.div [ HA.id "main-links" ]
-            [ routeLink Route.Index
-            , routeLink Route.Tags
-            ]
-        , tagCloud tags
-        ]
+    let
+        logo =
+            Route.toLink H.a
+                Route.Index
+                [ H.img
+                    [ HA.class "logo"
+                    , HA.src "/logo.svg"
+                    ]
+                    []
+                ]
+    in
+    H.nav [] [ logo, tagCloud tags ]
 
 
 tagCloud : { tags : List ( Tag, Int ) } -> Html msg
@@ -87,21 +92,17 @@ tagCloud { tags } =
                         ]
                 )
                 (Route.Tags__Slug_ { slug = Tag.toSlug tag })
+
+        cloud =
+            tags
+                |> List.sortBy (Tuple.second >> negate)
+                |> List.map toLink
+                |> H.div [ HA.id "tag-cloud" ]
     in
-    tags
-        |> List.sortBy (Tuple.second >> negate)
-        |> List.map toLink
-        |> H.div [ HA.id "tag-cloud" ]
-
-
-routeLink : Route -> Html msg
-routeLink route =
-    case Data.Route.routeToLabel route of
-        Just label ->
-            Route.toLink H.a route [ H.text label ]
-
-        Nothing ->
-            H.text ""
+    H.section []
+        [ H.h2 [] [ Route.toLink H.a Route.Tags [ H.text Data.Route.routeLabels.tags ] ]
+        , cloud
+        ]
 
 
 priorityBadge : Int -> Html msg

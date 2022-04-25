@@ -66,26 +66,26 @@ nav {
   flex-grow: 1;
 }
 
-nav > #main-links {
+nav > section {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--rythm);
+  flex-direction: column;
 }
 
-nav > #tag-cloud {
+#tag-cloud {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   gap: calc(0.4 * var(--rythm));
+  align-items: baseline;
 }
 
 @media screen and (max-width: 640px) {
-  main {
-    flex-direction: column;
+  nav {
+    flex-direction: row;
   }
 
-  nav > #main-links {
-    flex-direction: row;
+  main {
+    flex-direction: column;
   }
 }
 
@@ -102,10 +102,6 @@ nav > #tag-cloud {
   nav {
     max-width: 176px;
   }
-
-  nav > #main-links {
-    flex-direction: column;
-  }
 }
 
 @media screen and (min-width: 1024px) {
@@ -115,4 +111,11 @@ nav > #tag-cloud {
       min(240px, 50vw - 0.5 * var(--article-width) - 2 * var(--rythm))
     );
   }
+}
+
+/* Elements' styles */
+
+img.logo {
+  min-width: 100px;
+  width: 100px;
 }
