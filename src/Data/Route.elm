@@ -10,7 +10,7 @@ routeToLabel route =
             Just routeLabels.index
 
         BlogByDate ->
-            Just "Blog (by date)"
+            Just routeLabels.blogByDate
 
         Article_ _ ->
             Nothing
@@ -23,12 +23,14 @@ routeToLabel route =
 
 
 routeLabels :
-    { index : String
+    { blogByDate : String
+    , index : String
     , tags : String
     , tag : String -> String
     }
 routeLabels =
-    { index = "Homepage"
+    { blogByDate = "Blog (by date)"
+    , index = "Homepage"
     , tags = "All tags"
     , tag = \slug -> "Tag: " ++ slug
     }

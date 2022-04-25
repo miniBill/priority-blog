@@ -1,6 +1,7 @@
 module Page.BlogByDate exposing (Data, Model, Msg, RouteParams, page)
 
 import Data.Article exposing (ArticleTime(..), ArticleWithMetadata(..))
+import Data.Route as Route
 import DataSource exposing (DataSource)
 import Date
 import DateFormat
@@ -11,9 +12,9 @@ import Html.Attributes as HA
 import Page exposing (Page, StaticPayload)
 import Page.Index as Blog
 import Pages.PageUrl exposing (PageUrl)
-import Pages.Url
 import Route
 import Shared
+import Site
 import Time
 import View exposing (Body(..), View)
 
@@ -93,16 +94,11 @@ head :
 head _ =
     Seo.summary
         { canonicalUrlOverride = Nothing
-        , siteName = "elm-pages"
-        , image =
-            { url = Pages.Url.external "TODO"
-            , alt = "elm-pages logo"
-            , dimensions = Nothing
-            , mimeType = Nothing
-            }
-        , description = "TODO"
+        , siteName = Site.name
+        , image = Site.logo
+        , description = Site.description
         , locale = Nothing
-        , title = "TODO"
+        , title = Route.routeLabels.blogByDate
         }
         |> Seo.website
 

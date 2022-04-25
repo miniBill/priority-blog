@@ -12,6 +12,7 @@ import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
 import Route
 import Shared
+import Site
 import Theme
 import View exposing (Body(..), View)
 
@@ -141,15 +142,10 @@ head :
 head _ =
     Seo.summary
         { canonicalUrlOverride = Nothing
-        , siteName = "elm-pages"
-        , image =
-            { url = Pages.Url.external "TODO"
-            , alt = "elm-pages logo"
-            , dimensions = Nothing
-            , mimeType = Nothing
-            }
-        , description = "TODO"
+        , siteName = Site.name
+        , image = Site.logo
+        , description = Site.description
         , locale = Nothing
-        , title = "Blog index"
+        , title = Site.name
         }
         |> Seo.website

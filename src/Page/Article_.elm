@@ -14,6 +14,7 @@ import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
 import Serialize as Codec exposing (Codec)
 import Shared
+import Site
 import View exposing (ArticleData, Body(..), View)
 
 
@@ -144,17 +145,14 @@ head :
     StaticPayload Data RouteParams
     -> List Head.Tag
 head static =
-    let
-        common metadata =
+    case static.data of
+        HtmlBody { metadata } ->
             Seo.summary
                 { canonicalUrlOverride = Nothing
                 , siteName = "Incrium"
                 , image =
-                    { url = Pages.Url.external "TODO"
-                    , alt = "Incrium's logo"
-                    , dimensions = Nothing
-                    , mimeType = Nothing
-                    }
+                    extractImage static
+                        |> Maybe.withDefault Site.logo
                 , description = ""
                 , locale = Just "en"
                 , title = metadata.title
@@ -166,13 +164,15 @@ head static =
                     , expirationTime = Nothing
                     , section = Nothing
                     }
-    in
-    case static.data of
-        HtmlBody { metadata } ->
-            common metadata
 
         Redirect url ->
             [ Head.metaRedirect <| Head.raw <| "0; url=" ++ url ]
+
+
+extractImage : StaticPayload Data RouteParams -> Maybe Seo.Image
+extractImage _ =
+    -- TODO
+    Nothing
 
 
 toSeoTime : ArticleTime -> Maybe String
@@ -193,7 +193,7 @@ view :
 view _ _ static =
     case static.data of
         HtmlBody body ->
-            { title = body.metadata.title ++ " (" ++ String.fromInt body.metadata.priority ++ ")"
+            { title = body.metadata.title ++ " (" ++ String.fromInt body.metadata.priority ++ ") - " ++ Site.name
             , body = ArticleBody body
             }
 

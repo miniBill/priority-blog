@@ -10,9 +10,9 @@ import List.Extra
 import Page exposing (Page, StaticPayload)
 import Page.Index as Blog
 import Pages.PageUrl exposing (PageUrl)
-import Pages.Url
 import Serialize as Codec exposing (Codec)
 import Shared
+import Site
 import View exposing (View)
 
 
@@ -130,13 +130,8 @@ head :
 head static =
     Seo.summary
         { canonicalUrlOverride = Nothing
-        , siteName = "elm-pages"
-        , image =
-            { url = Pages.Url.external "TODO"
-            , alt = "elm-pages logo"
-            , dimensions = Nothing
-            , mimeType = Nothing
-            }
+        , siteName = Site.name
+        , image = Site.logo
         , description = "Articles with tag: " ++ static.data.tag
         , locale = Nothing
         , title = static.data.tag

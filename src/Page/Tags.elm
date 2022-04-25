@@ -9,9 +9,9 @@ import Head.Seo as Seo
 import Html as H
 import Page exposing (Page, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
-import Pages.Url
 import Route exposing (Route(..))
 import Shared exposing (viewTag)
+import Site exposing (logo)
 import View exposing (Body(..), View)
 
 
@@ -51,14 +51,9 @@ head :
 head _ =
     Seo.summary
         { canonicalUrlOverride = Nothing
-        , siteName = "elm-pages"
-        , image =
-            { url = Pages.Url.external "TODO"
-            , alt = "elm-pages logo"
-            , dimensions = Nothing
-            , mimeType = Nothing
-            }
-        , description = "TODO"
+        , siteName = Site.name
+        , image = logo
+        , description = Site.description
         , locale = Nothing
         , title = Route.routeLabels.tags
         }
