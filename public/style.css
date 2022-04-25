@@ -95,7 +95,7 @@ nav > #tag-cloud {
   }
 
   article {
-    margin: auto;
+    margin: 0 auto;
     max-width: var(--article-width);
   }
 
