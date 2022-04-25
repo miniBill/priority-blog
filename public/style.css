@@ -119,3 +119,32 @@ img.logo {
   min-width: 100px;
   width: 100px;
 }
+
+/* Color */
+
+html {
+  background-color: #efefef;
+}
+
+a {
+  color: #6200ee;
+}
+
+a:visited {
+  color: #824dff;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color: #efefef;
+    background-color: #121212;
+  }
+
+  a {
+    color: #bb86fc;
+  }
+
+  a:visited {
+    color: #d9c2f5;
+  }
+}
