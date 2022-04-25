@@ -151,15 +151,6 @@ viewToHtml sharedData pageView =
                         Err _ ->
                             [ H.text "Error parsing HTML" ]
 
-        MarkdownBody markdown ->
-            Theme.layout sharedData pageView <|
-                case markdownToHtml markdown of
-                    Ok content ->
-                        content
-
-                    Err e ->
-                        [ H.text e ]
-
         HtmlBody tags ->
             Theme.layout sharedData pageView tags
 

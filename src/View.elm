@@ -6,7 +6,6 @@ import Html as H exposing (Html)
 
 type Body msg
     = HtmlBody (List (Html msg))
-    | MarkdownBody String
     | ArticleBody ArticleData
     | RedirectBody String
 
@@ -31,9 +30,6 @@ map fn doc =
         case doc.body of
             HtmlBody body ->
                 HtmlBody <| List.map (H.map fn) body
-
-            MarkdownBody mk ->
-                MarkdownBody mk
 
             ArticleBody article ->
                 ArticleBody article
