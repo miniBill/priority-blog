@@ -1,13 +1,12 @@
 ---
 title: How true should things be for you to trust them or use them? (VWIP)
-tags: Reflection
-priority: 30
-date-published: 4/15/2022
-date-updated: 
-
+tags: Reflection, Epistemology
+priority: 70
+date-published: 4/25/2022
+date-updated: 4/29/2022
 ---
 
-
+I think i have epistemological learned helplessness (link scott) about a lot of things. what is true pragmatically?
 
 How true should things be for you to trust them or use them?
 

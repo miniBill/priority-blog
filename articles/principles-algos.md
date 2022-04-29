@@ -9,6 +9,8 @@ date-updated:
 
 *At some point I want to create an implementation of this. Dalio likely already has something for this but it's not clear to me that there's any decent publicly usable implementation.* 
 
+Below is from principles by Ray Dalio:
+
 **5.11 Convert your principles into algorithms and have the computer make decisions alongside you.**
 
 If you can do that, you will take the power of your decision making to a whole other level. In many cases, you will be able to test how that principle would have worked in the past or in various situations that will help you refine it, and in all cases, it will allow you to compound your understanding to a degree that would otherwise be impossible. It will also take emotion out of the equation. Algorithms work just like words in describing what you would like to have done, but they are written in a language that the computer can understand. If you don’t know how to speak this language, you should either learn it or have someone close to you who can translate for you. Your children and their peers must learn to speak this language because it will soon be as important or more important than any other language.
