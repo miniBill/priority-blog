@@ -3,7 +3,7 @@ title: Should you keep a closed or open door?
 tags: Question, Attention
 priority: 60
 date-published: 4/18/2022
-date-updated:4/29/2022
+date-updated: 4/29/2022
 
 ---
 

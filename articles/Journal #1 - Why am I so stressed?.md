@@ -3,7 +3,7 @@ title: Journal #1 - Why am I so stressed?
 tags: Ideation
 priority: 90
 date-published: 4/28/2022
-date-updated:4/29/2022
+date-updated: 4/29/2022
 
 ---
 
