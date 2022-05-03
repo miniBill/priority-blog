@@ -11,25 +11,26 @@ import Markdown.Block as Block
 import Markdown.Parser
 import Parser exposing ((|.), (|=), Parser)
 import Serialize as Codec exposing (Codec)
+import Slug exposing (Slug)
 import String.Extra
 import Time
 
 
 type Article
-    = ArticleFile { slug : String, isMarkdown : Bool }
-    | ArticleLink { slug : String, file : String }
+    = ArticleFile { slug : Slug, file : String, isMarkdown : Bool }
+    | ArticleLink { slug : Slug, file : String }
 
 
 type ArticleWithMetadata
     = ArticleFileWithMetadata
-        { slug : String
+        { slug : Slug
         , metadata : ArticleMetadata
         }
     | ArticleLinkWithMetadata Redirect
 
 
 type alias Redirect =
-    { slug : String
+    { slug : Slug
     , url : String
     , metadata : LinkMetadata
     }
@@ -74,7 +75,7 @@ codec =
         |> Codec.variant1 ArticleFileWithMetadata
             (Codec.record
                 (\slug metadata -> { slug = slug, metadata = metadata })
-                |> Codec.field .slug Codec.string
+                |> Codec.field .slug slugCodec
                 |> Codec.field .metadata articleMetadataCodec
                 |> Codec.finishRecord
             )
@@ -86,12 +87,27 @@ codec =
                     , metadata = metadata
                     }
                 )
-                |> Codec.field .slug Codec.string
+                |> Codec.field .slug slugCodec
                 |> Codec.field .url Codec.string
                 |> Codec.field .metadata linkMetadataCodec
                 |> Codec.finishRecord
             )
         |> Codec.finishCustomType
+
+
+slugCodec : Codec () Slug
+slugCodec =
+    Codec.mapValid
+        (\s ->
+            case Slug.parse s of
+                Just slug ->
+                    Ok slug
+
+                Nothing ->
+                    Err ()
+        )
+        Slug.toString
+        Codec.string
 
 
 articleMetadataCodec : Codec () ArticleMetadata
@@ -147,19 +163,39 @@ dateCodec =
 list : DataSource (List Article)
 list =
     let
+        parseSlugs lst =
+            lst
+                |> List.map parseSlug
+                |> DataSource.combine
+
+        parseSlug { file, isMarkdown } =
+            case Slug.generate file of
+                Just slug ->
+                    DataSource.succeed <|
+                        ArticleFile
+                            { file = file
+                            , slug = slug
+                            , isMarkdown = isMarkdown
+                            }
+
+                Nothing ->
+                    DataSource.fail <| "Could not generate slug for article " ++ file
+
         markdowns =
-            Glob.succeed (\slug -> ArticleFile { slug = slug, isMarkdown = True })
+            Glob.succeed (\file -> { file = file, isMarkdown = True })
                 |> Glob.match (Glob.literal "articles/")
                 |> Glob.capture Glob.wildcard
                 |> Glob.match (Glob.literal ".md")
                 |> Glob.toDataSource
+                |> DataSource.andThen parseSlugs
 
         htmls =
-            Glob.succeed (\slug -> ArticleFile { slug = slug, isMarkdown = False })
+            Glob.succeed (\file -> { file = file, isMarkdown = False })
                 |> Glob.match (Glob.literal "articles/")
                 |> Glob.capture Glob.wildcard
                 |> Glob.match (Glob.literal ".html")
                 |> Glob.toDataSource
+                |> DataSource.andThen parseSlugs
 
         links =
             Glob.succeed (\filename -> filename)
@@ -215,7 +251,7 @@ redirectLineParser : Parser Redirect
 redirectLineParser =
     Parser.succeed
         (\slug url metadata ->
-            { slug = String.trim slug
+            { slug = slug
             , url =
                 if String.contains ":" url then
                     String.trim url
@@ -225,12 +261,22 @@ redirectLineParser =
             , metadata = metadata
             }
         )
-        |= Parser.getChompedString (Parser.chompUntil ":")
+        |= Parser.andThen linkSlugParser (Parser.getChompedString (Parser.chompUntil ":"))
         |. Parser.symbol ":"
         |. Parser.spaces
         |= Parser.getChompedString (Parser.chompUntilEndOr " ")
         |. Parser.spaces
         |= metadataParser
+
+
+linkSlugParser : String -> Parser Slug
+linkSlugParser slug =
+    case Slug.generate slug of
+        Just s ->
+            Parser.succeed s
+
+        Nothing ->
+            Parser.problem <| "Cannot generate slug for link " ++ slug
 
 
 metadataParser : Parser LinkMetadata
@@ -330,7 +376,7 @@ fetchMetadata article =
                     )
 
 
-fetchArticleMetadata : { slug : String, isMarkdown : Bool } -> DataSource ( ArticleMetadata, String )
+fetchArticleMetadata : { slug : Slug, file : String, isMarkdown : Bool } -> DataSource ( ArticleMetadata, String )
 fetchArticleMetadata articleFile =
     let
         path =
@@ -489,7 +535,7 @@ parseLine line acc =
                 Err <| "Unexpected line in header: " ++ cleaned
 
 
-fetchRedirectMetadata : { file : String, slug : String } -> DataSource { slug : String, url : String, metadata : LinkMetadata }
+fetchRedirectMetadata : { file : String, slug : Slug } -> DataSource { slug : Slug, url : String, metadata : LinkMetadata }
 fetchRedirectMetadata { file, slug } =
     parseRedirectsFile file
         |> DataSource.andThen
@@ -534,13 +580,13 @@ tagsCodec =
         |> Codec.finishRecord
 
 
-getArticlePath : { slug : String, isMarkdown : Bool } -> String
-getArticlePath { slug, isMarkdown } =
+getArticlePath : { slug : Slug, file : String, isMarkdown : Bool } -> String
+getArticlePath { file, isMarkdown } =
     if isMarkdown then
-        "articles/" ++ slug ++ ".md"
+        "articles/" ++ file ++ ".md"
 
     else
-        "articles/" ++ slug ++ ".html"
+        "articles/" ++ file ++ ".html"
 
 
 timeParser : String -> Maybe ArticleTime

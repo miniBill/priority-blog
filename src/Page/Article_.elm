@@ -14,6 +14,7 @@ import Path
 import Serialize as Codec exposing (Codec)
 import Shared
 import Site
+import Slug
 import View exposing (ArticleData, Body(..), View)
 
 
@@ -56,20 +57,26 @@ getRouteParams : Article -> RouteParams
 getRouteParams article =
     case article of
         ArticleFile { slug } ->
-            { article = slug }
+            { article = Slug.toString slug }
 
         ArticleLink { slug } ->
-            { article = slug }
+            { article = Slug.toString slug }
 
 
 data : RouteParams -> DataSource Data
 data params =
+    let
+        slugString =
+            Slug.generate params.article
+                |> Maybe.map Slug.toString
+                |> Maybe.withDefault params.article
+    in
     Article.list
         |> DataSource.andThen
             (\articles ->
                 case
                     List.Extra.find
-                        (\article -> getRouteParams article == params)
+                        (\article -> (getRouteParams article).article == slugString)
                         articles
                 of
                     Nothing ->
