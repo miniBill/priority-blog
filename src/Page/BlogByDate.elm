@@ -15,6 +15,7 @@ import Pages.PageUrl exposing (PageUrl)
 import Route
 import Shared
 import Site
+import Slug
 import Time
 import View exposing (Body(..), View)
 
@@ -48,12 +49,13 @@ data : DataSource Data
 data =
     Data.Article.listWithMetadata
         |> DataSource.map
-            (List.filterMap
-                (\article ->
-                    Maybe.map2 Tuple.pair
-                        (getDatePublished article)
-                        (Blog.articleToItem article)
-                )
+            (.articles
+                >> List.filterMap
+                    (\article ->
+                        Maybe.map2 Tuple.pair
+                            (getDatePublished article)
+                            (Blog.articleToItem article)
+                    )
                 >> List.sortBy tupleToOrder
                 >> List.take articlesInHomepage
             )
@@ -154,7 +156,7 @@ viewArticle sharedModel ( datePublished, item ) =
     in
     case item.page of
         Blog.Article slug ->
-            Route.toLink inner (Route.Article_ { article = slug.slug })
+            Route.toLink inner (Route.Article_ { article = Slug.toString slug.slug })
 
         Blog.Link url ->
             inner [ HA.href url ]

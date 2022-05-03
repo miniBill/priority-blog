@@ -1,4 +1,4 @@
-module Data.Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..), LinkMetadata, Redirect, articleMetadataCodec, codec, fetchArticleMetadata, fetchRedirectMetadata, getArticlePath, list, listWithMetadata, tags)
+module Data.Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..), LinkMetadata, Redirect, articleMetadataCodec, codec, fetchArticleMetadata, fetchRedirectMetadata, getArticlePath, list, listWithMetadata, slugCodec, tags)
 
 import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
@@ -347,7 +347,11 @@ metadataParser =
         ]
 
 
-listWithMetadata : DataSource (List ArticleWithMetadata)
+listWithMetadata :
+    DataSource
+        { articles : List ArticleWithMetadata
+        , errors : List { file : String, error : String }
+        }
 listWithMetadata =
     list
         |> DataSource.andThen
@@ -355,28 +359,43 @@ listWithMetadata =
                 articles
                     |> List.map fetchMetadata
                     |> DataSource.combine
+                    |> DataSource.map
+                        (List.foldl
+                            (\e a ->
+                                case e of
+                                    Ok c ->
+                                        { a | articles = c :: a.articles }
+
+                                    Err err ->
+                                        { a | errors = err :: a.errors }
+                            )
+                            { articles = [], errors = [] }
+                        )
             )
 
 
-fetchMetadata : Article -> DataSource ArticleWithMetadata
+fetchMetadata : Article -> DataSource (Result { file : String, error : String } ArticleWithMetadata)
 fetchMetadata article =
     case article of
         ArticleLink data ->
             fetchRedirectMetadata data
-                |> DataSource.map ArticleLinkWithMetadata
+                |> DataSource.map (Result.map ArticleLinkWithMetadata)
 
         ArticleFile articleFile ->
             fetchArticleMetadata articleFile
                 |> DataSource.map
-                    (\( metadata, _ ) ->
-                        ArticleFileWithMetadata
-                            { slug = articleFile.slug
-                            , metadata = metadata
-                            }
+                    (Result.map <|
+                        \( metadata, _ ) ->
+                            ArticleFileWithMetadata
+                                { slug = articleFile.slug
+                                , metadata = metadata
+                                }
                     )
 
 
-fetchArticleMetadata : { slug : Slug, file : String, isMarkdown : Bool } -> DataSource ( ArticleMetadata, String )
+fetchArticleMetadata :
+    { a | file : String, isMarkdown : Bool }
+    -> DataSource (Result { file : String, error : String } ( ArticleMetadata, String ))
 fetchArticleMetadata articleFile =
     let
         path =
@@ -384,7 +403,7 @@ fetchArticleMetadata articleFile =
     in
     path
         |> DataSource.File.rawFile
-        |> DataSource.andThen
+        |> DataSource.map
             (\file ->
                 case String.split "---" file of
                     before :: between :: after ->
@@ -392,7 +411,7 @@ fetchArticleMetadata articleFile =
                             "" ->
                                 case parseMetadata between of
                                     Err e ->
-                                        DataSource.fail <| path ++ ": error parsing metadata - " ++ e
+                                        Err <| "error parsing metadata: " ++ e
 
                                     Ok metadata ->
                                         let
@@ -413,17 +432,18 @@ fetchArticleMetadata articleFile =
                                                 else
                                                     metadata
                                         in
-                                        ( filledMetadata
-                                        , rebuilt
-                                        )
-                                            |> DataSource.succeed
+                                        Ok
+                                            ( filledMetadata
+                                            , rebuilt
+                                            )
 
                             nonempty ->
-                                DataSource.fail <| path ++ ": expected nothing before the first '---', but instead I found " ++ nonempty
+                                Err <| "Expected nothing before the first '---', but instead I found " ++ nonempty
 
                     _ ->
-                        DataSource.fail <| path ++ ": Missing header"
+                        Err <| "Missing header"
             )
+        |> DataSource.map (Result.mapError (\error -> { file = articleFile.file, error = error }))
 
 
 parseMetadata : String -> Result String ArticleMetadata
@@ -535,16 +555,18 @@ parseLine line acc =
                 Err <| "Unexpected line in header: " ++ cleaned
 
 
-fetchRedirectMetadata : { file : String, slug : Slug } -> DataSource { slug : Slug, url : String, metadata : LinkMetadata }
+fetchRedirectMetadata :
+    { file : String, slug : Slug }
+    -> DataSource (Result { file : String, error : String } { slug : Slug, url : String, metadata : LinkMetadata })
 fetchRedirectMetadata { file, slug } =
     parseRedirectsFile file
-        |> DataSource.andThen
+        |> DataSource.map
             (\redirects ->
                 redirects
                     |> List.Extra.find (\redirect -> redirect.slug == slug)
                     |> Maybe.map
-                        (\redirect -> DataSource.succeed redirect)
-                    |> Maybe.withDefault (DataSource.fail "Redirect not found")
+                        (\redirect -> Ok redirect)
+                    |> Maybe.withDefault (Err { file = file, error = "Redirect not found" })
             )
 
 
@@ -552,7 +574,7 @@ tags : DataSource (List ( Tag, Int ))
 tags =
     listWithMetadata
         |> DataSource.map
-            (\articles ->
+            (\{ articles } ->
                 articles
                     |> List.concatMap
                         (\article ->
@@ -580,7 +602,7 @@ tagsCodec =
         |> Codec.finishRecord
 
 
-getArticlePath : { slug : Slug, file : String, isMarkdown : Bool } -> String
+getArticlePath : { a | file : String, isMarkdown : Bool } -> String
 getArticlePath { file, isMarkdown } =
     if isMarkdown then
         "articles/" ++ file ++ ".md"

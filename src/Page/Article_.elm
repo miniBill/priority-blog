@@ -1,6 +1,6 @@
 module Page.Article_ exposing (Data, Model, Msg, RouteParams, page)
 
-import Data.Article as Article exposing (Article(..), ArticleMetadata, ArticleTime(..))
+import Data.Article as Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..))
 import Data.Tag as Tag
 import DataSource exposing (DataSource)
 import Head
@@ -34,6 +34,7 @@ type alias RouteParams =
 type Data
     = DataArticle ArticleData
     | DataRedirect String
+    | DataError
 
 
 page : Page RouteParams Data
@@ -49,8 +50,18 @@ page =
 routes : DataSource (List RouteParams)
 routes =
     DataSource.map
-        (List.map getRouteParams)
-        Article.list
+        (.articles >> List.map getRouteParamsWithMetadata)
+        Article.listWithMetadata
+
+
+getRouteParamsWithMetadata : ArticleWithMetadata -> RouteParams
+getRouteParamsWithMetadata article =
+    case article of
+        ArticleFileWithMetadata { slug } ->
+            { article = Slug.toString slug }
+
+        ArticleLinkWithMetadata { slug } ->
+            { article = Slug.toString slug }
 
 
 getRouteParams : Article -> RouteParams
@@ -87,17 +98,30 @@ data params =
                             ArticleFile f ->
                                 Article.fetchArticleMetadata f
                                     |> DataSource.map
-                                        (\( metadata, content ) ->
-                                            DataArticle
-                                                { content = content
-                                                , isMarkdown = f.isMarkdown
-                                                , metadata = metadata
-                                                }
+                                        (\maybeMetadata ->
+                                            case maybeMetadata of
+                                                Ok ( metadata, content ) ->
+                                                    DataArticle
+                                                        { content = content
+                                                        , isMarkdown = f.isMarkdown
+                                                        , metadata = metadata
+                                                        }
+
+                                                Err _ ->
+                                                    DataError
                                         )
 
                             ArticleLink redirect ->
                                 Article.fetchRedirectMetadata redirect
-                                    |> DataSource.map (\{ url } -> DataRedirect url)
+                                    |> DataSource.map
+                                        (\maybeMetadata ->
+                                            case maybeMetadata of
+                                                Ok { url } ->
+                                                    DataRedirect url
+
+                                                Err _ ->
+                                                    DataError
+                                        )
             )
         |> DataSource.distillSerializeCodec ("article-" ++ params.article) codec
 
@@ -105,16 +129,20 @@ data params =
 codec : Codec () Data
 codec =
     Codec.customType
-        (\fhtml fredirect value ->
+        (\fhtml fredirect ferror value ->
             case value of
                 DataArticle h ->
                     fhtml h
 
                 DataRedirect r ->
                     fredirect r
+
+                DataError ->
+                    ferror
         )
         |> Codec.variant1 DataArticle htmlBodyCodec
         |> Codec.variant1 DataRedirect Codec.string
+        |> Codec.variant0 DataError
         |> Codec.finishCustomType
 
 
@@ -147,7 +175,7 @@ head static =
         DataArticle { metadata } ->
             Seo.summary
                 { canonicalUrlOverride = Nothing
-                , siteName = "Incrium"
+                , siteName = Site.name
                 , image =
                     case metadata.image of
                         Just imageUrl ->
@@ -179,6 +207,17 @@ head static =
         DataRedirect url ->
             [ Head.metaRedirect <| Head.raw <| "0; url=" ++ url ]
 
+        DataError ->
+            Seo.summary
+                { canonicalUrlOverride = Nothing
+                , siteName = Site.name
+                , image = Site.logo
+                , description = ""
+                , locale = Just "en"
+                , title = ""
+                }
+                |> Seo.website
+
 
 toSeoTime : ArticleTime -> Maybe String
 toSeoTime time =
@@ -205,4 +244,9 @@ view _ _ static =
         DataRedirect url ->
             { title = "Redirecting to " ++ url
             , body = RedirectBody url
+            }
+
+        DataError ->
+            { title = "Error"
+            , body = RedirectBody "/"
             }

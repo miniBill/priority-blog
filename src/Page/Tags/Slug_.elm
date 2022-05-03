@@ -55,7 +55,7 @@ data : RouteParams -> DataSource Data
 data routeParams =
     Article.listWithMetadata
         |> DataSource.map
-            (\articles ->
+            (\{ articles } ->
                 let
                     filteredArticles =
                         articles

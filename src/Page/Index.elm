@@ -1,6 +1,6 @@
 module Page.Index exposing (Data, Item, LinkOrArticle(..), Model, Msg, RouteParams, articleToItem, linkOrArticleCodec, page, viewArticleList)
 
-import Data.Article exposing (ArticleWithMetadata(..))
+import Data.Article as Article exposing (ArticleWithMetadata(..))
 import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
 import Head
@@ -13,6 +13,7 @@ import Route
 import Serialize as Codec exposing (Codec)
 import Shared
 import Site
+import Slug exposing (Slug)
 import Theme
 import View exposing (Body(..), View)
 
@@ -43,7 +44,7 @@ type alias Item =
 
 type LinkOrArticle
     = Link String
-    | Article { slug : String, description : Maybe String, image : Maybe String }
+    | Article { slug : Slug, description : Maybe String, image : Maybe String }
 
 
 page : Page RouteParams Data
@@ -119,7 +120,7 @@ viewLink item =
     in
     case item.page of
         Article { slug, description, image } ->
-            Route.toLink (link description image) (Route.Article_ { article = slug })
+            Route.toLink (link description image) (Route.Article_ { article = Slug.toString slug })
 
         Link url ->
             link Nothing Nothing [ HA.href url ]
@@ -127,8 +128,8 @@ viewLink item =
 
 data : DataSource Data
 data =
-    Data.Article.listWithMetadata
-        |> DataSource.map (List.filterMap articleToItem)
+    Article.listWithMetadata
+        |> DataSource.map (.articles >> List.filterMap articleToItem)
         |> DataSource.distillSerializeCodec "index" codec
 
 
@@ -163,7 +164,7 @@ linkOrArticleCodec =
                     , image = image
                     }
             )
-            Codec.string
+            Article.slugCodec
             (Codec.maybe Codec.string)
             (Codec.maybe Codec.string)
         |> Codec.variant1 Link Codec.string

@@ -21,6 +21,9 @@ routeToLabel route =
         Tags__Slug_ { slug } ->
             Just <| routeLabels.tag slug
 
+        BuildErrors ->
+            Nothing
+
 
 routeLabels :
     { blogByDate : String
