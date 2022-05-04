@@ -103,7 +103,6 @@ data params =
                                                 Ok ( metadata, content ) ->
                                                     DataArticle
                                                         { content = content
-                                                        , isMarkdown = f.isMarkdown
                                                         , metadata = metadata
                                                         }
 
@@ -150,19 +149,16 @@ htmlBodyCodec :
     Codec
         ()
         { content : String
-        , isMarkdown : Bool
         , metadata : ArticleMetadata
         }
 htmlBodyCodec =
     Codec.record
-        (\content isMarkdown metadata ->
+        (\content metadata ->
             { content = content
-            , isMarkdown = isMarkdown
             , metadata = metadata
             }
         )
         |> Codec.field .content Codec.string
-        |> Codec.field .isMarkdown Codec.bool
         |> Codec.field .metadata Article.articleMetadataCodec
         |> Codec.finishRecord
 

@@ -17,7 +17,7 @@ import Time
 
 
 type Article
-    = ArticleFile { slug : Slug, file : String, isMarkdown : Bool }
+    = ArticleFile { slug : Slug, file : String }
     | ArticleLink { slug : Slug, file : String }
 
 
@@ -168,32 +168,23 @@ list =
                 |> List.map parseSlug
                 |> DataSource.combine
 
-        parseSlug { file, isMarkdown } =
+        parseSlug { file } =
             case Slug.generate file of
                 Just slug ->
                     DataSource.succeed <|
                         ArticleFile
                             { file = file
                             , slug = slug
-                            , isMarkdown = isMarkdown
                             }
 
                 Nothing ->
                     DataSource.fail <| "Could not generate slug for article " ++ file
 
         markdowns =
-            Glob.succeed (\file -> { file = file, isMarkdown = True })
+            Glob.succeed (\file -> { file = file })
                 |> Glob.match (Glob.literal "articles/")
                 |> Glob.capture Glob.wildcard
                 |> Glob.match (Glob.literal ".md")
-                |> Glob.toDataSource
-                |> DataSource.andThen parseSlugs
-
-        htmls =
-            Glob.succeed (\file -> { file = file, isMarkdown = False })
-                |> Glob.match (Glob.literal "articles/")
-                |> Glob.capture Glob.wildcard
-                |> Glob.match (Glob.literal ".html")
                 |> Glob.toDataSource
                 |> DataSource.andThen parseSlugs
 
@@ -223,9 +214,8 @@ list =
                             |> DataSource.map List.concat
                     )
     in
-    DataSource.map3 (\m h l -> m ++ h ++ l)
+    DataSource.map2 (\m l -> m ++ l)
         markdowns
-        htmls
         links
 
 
@@ -394,7 +384,7 @@ fetchMetadata article =
 
 
 fetchArticleMetadata :
-    { a | file : String, isMarkdown : Bool }
+    { a | file : String }
     -> DataSource (Result { file : String, error : String } ( ArticleMetadata, String ))
 fetchArticleMetadata articleFile =
     let
@@ -423,14 +413,10 @@ fetchArticleMetadata articleFile =
                                                     |> Result.withDefault []
 
                                             filledMetadata =
-                                                if articleFile.isMarkdown then
-                                                    { metadata
-                                                        | description = markdownToDescription parsed
-                                                        , image = markdownToImage parsed
-                                                    }
-
-                                                else
-                                                    metadata
+                                                { metadata
+                                                    | description = markdownToDescription parsed
+                                                    , image = markdownToImage parsed
+                                                }
                                         in
                                         Ok
                                             ( filledMetadata
@@ -602,13 +588,9 @@ tagsCodec =
         |> Codec.finishRecord
 
 
-getArticlePath : { a | file : String, isMarkdown : Bool } -> String
-getArticlePath { file, isMarkdown } =
-    if isMarkdown then
-        "articles/" ++ file ++ ".md"
-
-    else
-        "articles/" ++ file ++ ".html"
+getArticlePath : { a | file : String } -> String
+getArticlePath { file } =
+    "articles/" ++ file ++ ".md"
 
 
 timeParser : String -> Maybe ArticleTime

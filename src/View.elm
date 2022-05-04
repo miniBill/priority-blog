@@ -11,8 +11,7 @@ type Body msg
 
 
 type alias ArticleData =
-    { isMarkdown : Bool
-    , content : String
+    { content : String
     , metadata : ArticleMetadata
     }
 

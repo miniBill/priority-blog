@@ -7,8 +7,6 @@ import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
 import Html as H exposing (Html)
 import Html.Attributes as HA
-import Html.Parser
-import Html.Parser.Util
 import Markdown.Parser
 import Markdown.Renderer
 import Pages.Flags
@@ -136,21 +134,12 @@ viewToHtml sharedData pageView =
                         ]
             in
             Theme.layout { tags = sharedData } pageView <|
-                if article.isMarkdown then
-                    case markdownToHtml article.content of
-                        Ok content ->
-                            content ++ tagsHtml
+                case markdownToHtml article.content of
+                    Ok content ->
+                        content ++ tagsHtml
 
-                        Err e ->
-                            [ H.text e ]
-
-                else
-                    case Html.Parser.run article.content of
-                        Ok content ->
-                            Html.Parser.Util.toVirtualDom content ++ tagsHtml
-
-                        Err _ ->
-                            [ H.text "Error parsing HTML" ]
+                    Err e ->
+                        [ H.text e ]
 
         HtmlBody tags ->
             Theme.layout { tags = sharedData } pageView tags
