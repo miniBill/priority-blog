@@ -18,3 +18,11 @@ some solutions
 - inner simulator
 
 find old cmap thing
+
+IMO, most “soft skills” books are not trying to add explicit statements to your store of “trusted explicit/verbal statements”. 
+
+Instead, they are trying to [...]to try out in your inner simulator
+
+—bits that you can then keep, or not, according to whether they feel promising when you imagine trying them out. Later, you can try the promising bits out in the actual world.
+
+soft skills book lead to REM style internal experiments.

@@ -1,6 +1,6 @@
 ---
 title: Journal #1 - Why am I so happy?
-tags: Ideation
+tags: Journal, Happiness
 priority: 50
 date-published: 5/2/2022
 date-updated: 
