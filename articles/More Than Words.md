@@ -1,0 +1,1 @@
+take concepts not the words
