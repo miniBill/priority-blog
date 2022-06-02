@@ -5,3 +5,4 @@ chainsawman: https://www.youtube.com/watch?v=VPB_J6Egi28
 acxbm22: https://fb.me/e/5VdLRqkHE
 bard: https://discord.gg/AZ5NbeXHVN
 br: https://www.facebook.com/groups/bountiedrationality
+party: https://fb.me/e/1TtUOoREK
