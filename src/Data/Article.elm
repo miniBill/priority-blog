@@ -1,4 +1,4 @@
-module Data.Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..), LinkMetadata, Redirect, articleMetadataCodec, codec, fetchArticleMetadata, fetchRedirectMetadata, getArticlePath, list, listWithMetadata, slugCodec, tags)
+module Data.Article exposing (Article(..), ArticleMetadata, ArticleTime(..), ArticleWithMetadata(..), LinkMetadata, Redirect, articleMetadataCodec, fetchArticleMetadata, fetchRedirectMetadata, list, listWithMetadata, slugCodec, tags)
 
 import Data.Tag as Tag exposing (Tag)
 import DataSource exposing (DataSource)
@@ -61,40 +61,6 @@ type ArticleTime
     | Date Date.Date
 
 
-codec : Codec () ArticleWithMetadata
-codec =
-    Codec.customType
-        (\farticle flink value ->
-            case value of
-                ArticleFileWithMetadata m ->
-                    farticle m
-
-                ArticleLinkWithMetadata m ->
-                    flink m
-        )
-        |> Codec.variant1 ArticleFileWithMetadata
-            (Codec.record
-                (\slug metadata -> { slug = slug, metadata = metadata })
-                |> Codec.field .slug slugCodec
-                |> Codec.field .metadata articleMetadataCodec
-                |> Codec.finishRecord
-            )
-        |> Codec.variant1 ArticleLinkWithMetadata
-            (Codec.record
-                (\slug url metadata ->
-                    { slug = slug
-                    , url = url
-                    , metadata = metadata
-                    }
-                )
-                |> Codec.field .slug slugCodec
-                |> Codec.field .url Codec.string
-                |> Codec.field .metadata linkMetadataCodec
-                |> Codec.finishRecord
-            )
-        |> Codec.finishCustomType
-
-
 slugCodec : Codec () Slug
 slugCodec =
     Codec.mapValid
@@ -118,17 +84,6 @@ articleMetadataCodec =
         |> Codec.field .image (Codec.maybe Codec.string)
         |> Codec.field .tags Tag.listCodec
         |> Codec.field .priority Codec.int
-        |> Codec.field .datePublished (Codec.maybe articleTimeCodec)
-        |> Codec.field .dateUpdated (Codec.maybe articleTimeCodec)
-        |> Codec.finishRecord
-
-
-linkMetadataCodec : Codec () LinkMetadata
-linkMetadataCodec =
-    Codec.record LinkMetadata
-        |> Codec.field .title (Codec.maybe Codec.string)
-        |> Codec.field .tags Tag.listCodec
-        |> Codec.field .priority (Codec.maybe Codec.int)
         |> Codec.field .datePublished (Codec.maybe articleTimeCodec)
         |> Codec.field .dateUpdated (Codec.maybe articleTimeCodec)
         |> Codec.finishRecord
@@ -418,12 +373,13 @@ fetchArticleMetadata articleFile =
                                             rebuilt =
                                                 String.join "---" after
 
-                                            parsed =
-                                                Markdown.Parser.parse rebuilt
-                                                    |> Result.withDefault []
-
                                             filledMetadata =
                                                 if articleFile.isMarkdown then
+                                                    let
+                                                        parsed =
+                                                            Markdown.Parser.parse rebuilt
+                                                                |> Result.withDefault []
+                                                    in
                                                     { metadata
                                                         | description = markdownToDescription parsed
                                                         , image = markdownToImage parsed
@@ -507,9 +463,6 @@ parseLine line acc =
         case String.indexes ":" cleaned of
             splitAt :: _ ->
                 let
-                    before =
-                        String.trim <| String.left splitAt cleaned
-
                     after =
                         String.trim <| String.dropLeft (splitAt + 1) cleaned
                 in
@@ -517,6 +470,10 @@ parseLine line acc =
                     Ok acc
 
                 else
+                    let
+                        before =
+                            String.trim <| String.left splitAt cleaned
+                    in
                     case before of
                         "title" ->
                             Ok { acc | title = Just after }
