@@ -1,4 +1,4 @@
-module Page.BuildErrors exposing (Data, Model, Msg, page)
+module Page.BuildErrors exposing (Data, Model, Msg, RouteParams, page)
 
 import Data.Article as Article
 import DataSource exposing (DataSource)
