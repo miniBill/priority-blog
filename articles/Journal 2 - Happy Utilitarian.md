@@ -1,5 +1,5 @@
 ---
-title: Journal #1 - Why am I so happy?
+title: Journal #2 - Why am I so happy?
 tags: Journal, Happiness
 priority: 50
 date-published: 5/2/2022

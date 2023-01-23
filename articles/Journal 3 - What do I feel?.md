@@ -1,5 +1,5 @@
 ---
-title: Journal #1 - Why am I so happy?
+title: Journal #3 - Why am I so happy?
 tags: Ideation
 priority: 50
 date-published: 5/6/2022
