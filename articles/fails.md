@@ -1,0 +1,1 @@
+why do I keep failing? over and over? what is my ego and blindspots
